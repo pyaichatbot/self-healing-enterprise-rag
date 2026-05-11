@@ -1,0 +1,2106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Self-Healing RAG — Documentation</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #7ee787;
+    --warn: #f78166;
+    --yellow: #e3b341;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --pass: #2ea043;
+    --fail: #da3633;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6; }
+
+  /* Layout */
+  #shell { display: flex; min-height: 100vh; }
+  #sidebar {
+    width: 240px; min-width: 240px; background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  #main { flex: 1; overflow-y: auto; padding: 32px 40px; max-width: 1100px; }
+
+  /* Sidebar */
+  .sidebar-logo { padding: 20px 16px 12px; border-bottom: 1px solid var(--border); }
+  .sidebar-logo .logo-tag { font-size: 10px; font-weight: 600; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+  .sidebar-logo h1 { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.3; }
+  .sidebar-section { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .sidebar-section-label { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; padding: 6px 16px 2px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 16px; cursor: pointer;
+    color: var(--muted); font-size: 13px; transition: all .15s; border-left: 2px solid transparent;
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(88,166,255,.08); }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .sidebar-footer { margin-top: auto; padding: 12px 16px; border-top: 1px solid var(--border); }
+  .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .pill-pass { background: rgba(46,160,67,.15); color: var(--accent2); }
+  .pill-fail { background: rgba(218,54,51,.15); color: var(--warn); }
+  .pill-warn { background: rgba(227,179,65,.15); color: var(--yellow); }
+  .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); box-shadow: 0 0 0 0 rgba(126,231,135,.4); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(126,231,135,.4)} 50%{box-shadow:0 0 0 5px rgba(126,231,135,0)} }
+
+  /* Pages */
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-header { margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .page-header .breadcrumb { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .page-header h2 { font-size: 24px; font-weight: 700; color: var(--text); }
+  .page-header p { color: var(--muted); margin-top: 4px; font-size: 13px; }
+
+  /* Cards */
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .card-title { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
+  .card-value { font-size: 28px; font-weight: 700; color: var(--text); }
+  .card-value.pass { color: var(--accent2); }
+  .card-value.fail { color: var(--warn); }
+  .card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* Sections */
+  .section { margin-bottom: 36px; }
+  .section-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-title .icon { font-size: 14px; }
+
+  /* Badge */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge-pass { background: rgba(46,160,67,.2); color: var(--accent2); border: 1px solid rgba(46,160,67,.3); }
+  .badge-fail { background: rgba(218,54,51,.2); color: var(--warn); border: 1px solid rgba(218,54,51,.3); }
+  .badge-warn { background: rgba(227,179,65,.2); color: var(--yellow); border: 1px solid rgba(227,179,65,.3); }
+  .badge-info { background: rgba(88,166,255,.2); color: var(--accent); border: 1px solid rgba(88,166,255,.3); }
+  .badge-partial { background: rgba(188,140,255,.2); color: var(--purple); border: 1px solid rgba(188,140,255,.3); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid rgba(48,54,61,.5); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  /* Code */
+  code { background: var(--surface2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; font-family: 'SF Mono', Consolas, monospace; font-size: 12px; color: var(--pink); }
+  pre { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 16px; overflow-x: auto; font-family: 'SF Mono', Consolas, monospace; font-size: 12px; line-height: 1.7; color: var(--accent2); }
+
+  /* Progress bar */
+  .progress-wrap { background: var(--surface2); border-radius: 4px; height: 6px; width: 100%; overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: 4px; transition: width .6s ease; }
+  .bar-pass { background: var(--accent2); }
+  .bar-warn { background: var(--yellow); }
+  .bar-fail { background: var(--warn); }
+  .bar-accent { background: var(--accent); }
+
+  /* Flow diagram */
+  .flow-diagram { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 24px; overflow-x: auto; }
+  .flow-node {
+    display: inline-flex; flex-direction: column; align-items: center; padding: 10px 16px; border-radius: 8px;
+    font-size: 12px; font-weight: 600; text-align: center; min-width: 100px; border: 1px solid;
+  }
+  .flow-node .node-sub { font-size: 10px; font-weight: 400; margin-top: 3px; opacity: .7; }
+  .fn-blue { background: rgba(88,166,255,.1); border-color: rgba(88,166,255,.4); color: var(--accent); }
+  .fn-green { background: rgba(126,231,135,.1); border-color: rgba(126,231,135,.4); color: var(--accent2); }
+  .fn-purple { background: rgba(188,140,255,.1); border-color: rgba(188,140,255,.4); color: var(--purple); }
+  .fn-yellow { background: rgba(227,179,65,.1); border-color: rgba(227,179,65,.4); color: var(--yellow); }
+  .fn-pink { background: rgba(247,120,186,.1); border-color: rgba(247,120,186,.4); color: var(--pink); }
+  .flow-arrow { display: flex; align-items: center; color: var(--muted); padding: 0 8px; font-size: 18px; }
+
+  /* SLO meter */
+  .slo-meter { margin-bottom: 16px; }
+  .slo-meter-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .slo-meter-name { font-size: 13px; color: var(--text); font-weight: 500; }
+  .slo-meter-value { font-size: 13px; font-weight: 700; }
+
+  /* Runbook steps */
+  .steps { list-style: none; }
+  .steps li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(48,54,61,.5); }
+  .steps li:last-child { border-bottom: none; }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; background: rgba(88,166,255,.15); border: 1px solid rgba(88,166,255,.3); color: var(--accent); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { color: var(--text); font-size: 13px; flex: 1; }
+
+  /* Threat item */
+  .threat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-bottom: 10px; }
+  .threat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .threat-name { font-weight: 600; font-size: 13px; }
+  .mitigation-list { list-style: none; }
+  .mitigation-list li { font-size: 12px; color: var(--muted); padding: 3px 0; display: flex; gap: 8px; align-items: flex-start; }
+  .mitigation-list li::before { content: '→'; color: var(--accent2); flex-shrink: 0; }
+
+  /* Evidence timeline */
+  .evidence-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(48,54,61,.4); }
+  .evidence-item:last-child { border-bottom: none; }
+  .ev-time { font-size: 11px; color: var(--muted); min-width: 140px; font-family: monospace; }
+  .ev-content { flex: 1; }
+  .ev-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .ev-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* Gate checklist */
+  .gate-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(48,54,61,.3); }
+  .gate-item:last-child { border-bottom: none; }
+  .gate-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .gate-label { font-size: 13px; color: var(--text); flex: 1; }
+  .gate-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* Connector card */
+  .connector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+  .connector-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .chip-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); flex-shrink: 0; }
+
+  /* Method tag */
+  .method { padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; font-family: monospace; }
+  .get { background: rgba(126,231,135,.2); color: var(--accent2); }
+  .post { background: rgba(88,166,255,.2); color: var(--accent); }
+  .del { background: rgba(247,120,186,.2); color: var(--pink); }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  @media (max-width: 700px) {
+    #sidebar { display: none; }
+    #main { padding: 16px; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="shell">
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-tag">Enterprise Platform</div>
+    <h1>Self-Healing RAG</h1>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Overview</div>
+    <div class="nav-item active" onclick="show('overview')">
+      <div class="nav-dot" style="background:#58a6ff"></div> Dashboard
+    </div>
+    <div class="nav-item" onclick="show('architecture')">
+      <div class="nav-dot" style="background:#bc8cff"></div> Architecture
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Reliability</div>
+    <div class="nav-item" onclick="show('slo')">
+      <div class="nav-dot" style="background:#7ee787"></div> SLOs & Error Budget
+    </div>
+    <div class="nav-item" onclick="show('scale')">
+      <div class="nav-dot" style="background:#7ee787"></div> Scale 500K Blueprint
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Engineering</div>
+    <div class="nav-item" onclick="show('tutorial')">
+      <div class="nav-dot" style="background:#7ee787"></div> Tutorial (E2E)
+    </div>
+    <div class="nav-item" onclick="show('h100-usecase')">
+      <div class="nav-dot" style="background:#bc8cff"></div> H100 Use Case
+    </div>
+    <div class="nav-item" onclick="show('connectors')">
+      <div class="nav-dot" style="background:#e3b341"></div> Connectors SDK
+    </div>
+    <div class="nav-item" onclick="show('finetune')">
+      <div class="nav-dot" style="background:#f778ba"></div> Fine-Tuning Gate
+    </div>
+    <div class="nav-item" onclick="show('api')">
+      <div class="nav-dot" style="background:#58a6ff"></div> API Versioning
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Security</div>
+    <div class="nav-item" onclick="show('security')">
+      <div class="nav-dot" style="background:#f78166"></div> Security Policy
+    </div>
+    <div class="nav-item" onclick="show('threats')">
+      <div class="nav-dot" style="background:#f78166"></div> Threat Model
+    </div>
+    <div class="nav-item" onclick="show('compliance')">
+      <div class="nav-dot" style="background:#bc8cff"></div> Compliance Map
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Operations</div>
+    <div class="nav-item" onclick="show('runbooks')">
+      <div class="nav-dot" style="background:#e3b341"></div> Runbooks
+    </div>
+    <div class="nav-item" onclick="show('evidence')">
+      <div class="nav-dot" style="background:#7ee787"></div> Evidence Vault
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="card-title" style="margin-bottom:8px">Latest Evidence</div>
+    <div class="status-pill pill-pass">
+      <div class="pulse"></div> All Gates Passed
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px;">20260510T174625Z</div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+
+  <!-- ═══ DASHBOARD ═══ -->
+  <div id="overview" class="page active">
+    <div class="page-header">
+      <div class="breadcrumb">SHRAG Platform</div>
+      <h2>System Dashboard</h2>
+      <p>Current status across all gates, SLOs, and release evidence.</p>
+    </div>
+
+    <div class="section">
+      <div class="grid grid-4">
+        <div class="card">
+          <div class="card-title">API Availability</div>
+          <div class="card-value pass">99.9%</div>
+          <div class="card-sub">Monthly SLO target</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Scale Gate</div>
+          <div class="card-value pass">PASS</div>
+          <div class="card-sub">500K docs · 52K/hr ingest</div>
+        </div>
+        <div class="card">
+          <div class="card-title">DR Failover</div>
+          <div class="card-value pass">PASS</div>
+          <div class="card-sub">RTO 60m · RPO 15m</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Fine-Tune Gate</div>
+          <div class="card-value pass">PASS</div>
+          <div class="card-sub">H100 · eng-assistant-v1</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📊</span> Performance Benchmarks (latest run)</div>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title">Retrieval Latency</div>
+          <div style="margin-bottom:8px;">
+            <div class="slo-meter-label">
+              <span class="slo-meter-name">p95 (actual)</span>
+              <span class="slo-meter-value" style="color:var(--accent2)">780ms</span>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-bar bar-pass" style="width:62%"></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">Target: &lt;900ms · headroom 13%</div>
+          </div>
+          <div style="margin-bottom:8px;">
+            <div class="slo-meter-label">
+              <span class="slo-meter-name">End-to-end p95</span>
+              <span class="slo-meter-value" style="color:var(--yellow)">2,200ms</span>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-bar bar-warn" style="width:88%"></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">Target: &lt;2,500ms · 88% of budget</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Ingest Throughput</div>
+          <div style="margin-bottom:8px;">
+            <div class="slo-meter-label">
+              <span class="slo-meter-name">Docs/hour (actual)</span>
+              <span class="slo-meter-value" style="color:var(--accent2)">52,000</span>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-bar bar-pass" style="width:100%"></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">Target: ≥50,000/hr · 4% above floor</div>
+          </div>
+          <div style="margin-bottom:8px;">
+            <div class="slo-meter-label">
+              <span class="slo-meter-name">Retrieval recall@k</span>
+              <span class="slo-meter-value" style="color:var(--accent2)">0.81</span>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-bar bar-pass" style="width:81%"></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">Corpus: 500,000 docs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">✅</span> Release Gate Status</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Gate</th><th>Status</th><th>Details</th><th>Evidence</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Scale 500K</strong></td>
+              <td><span class="badge badge-pass">✓ PASS</span></td>
+              <td>Ingest, query, chaos all pass</td>
+              <td><code>scale-500k-report.json</code></td>
+            </tr>
+            <tr>
+              <td><strong>Benchmark 500K</strong></td>
+              <td><span class="badge badge-pass">✓ PASS</span></td>
+              <td>p95 780ms retrieval · 52K/hr ingest</td>
+              <td><code>benchmark-500k-report.json</code></td>
+            </tr>
+            <tr>
+              <td><strong>DR Failover</strong></td>
+              <td><span class="badge badge-pass">✓ PASS</span></td>
+              <td>RTO, RPO, rollback verified</td>
+              <td><code>dr-failover-report.json</code></td>
+            </tr>
+            <tr>
+              <td><strong>Connector Evidence</strong></td>
+              <td><span class="badge badge-pass">✓ PASS</span></td>
+              <td>Standard + strict modes</td>
+              <td><code>connector-evidence-report.json</code></td>
+            </tr>
+            <tr>
+              <td><strong>Fine-Tune Readiness</strong></td>
+              <td><span class="badge badge-pass">✓ PASS</span></td>
+              <td>H100 · eng-assistant-v1 · train-20260510-001</td>
+              <td><code>finetune-readiness-report.json</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🔗</span> Quick Navigation</div>
+      <div class="grid grid-3">
+        <div class="card" style="cursor:pointer;" onclick="show('architecture')">
+          <div style="font-size:20px;margin-bottom:6px;">🏗️</div>
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Architecture</div>
+          <div style="font-size:12px;color:var(--muted);">System flow, modules, deployment topology</div>
+        </div>
+        <div class="card" style="cursor:pointer;" onclick="show('runbooks')">
+          <div style="font-size:20px;margin-bottom:6px;">📖</div>
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Runbooks</div>
+          <div style="font-size:12px;color:var(--muted);">DR, degradation, model rollback, security</div>
+        </div>
+        <div class="card" style="cursor:pointer;" onclick="show('compliance')">
+          <div style="font-size:20px;margin-bottom:6px;">🛡️</div>
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Compliance</div>
+          <div style="font-size:12px;color:var(--muted);">SOC 2, ISO 27001, GDPR control map</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ARCHITECTURE ═══ -->
+  <div id="architecture" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">SHRAG Platform</div>
+      <h2>Architecture</h2>
+      <p>Full end-to-end architecture: enterprise source ingestion, retrieval-serving path, self-healing loop, and release/evaluation control gates.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🧭</span> End-to-End Runtime Flow</div>
+      <div class="flow-diagram">
+        <svg viewBox="0 0 1080 230" width="100%" style="max-height:230px;">
+          <rect x="8" y="20" width="1064" height="84" rx="8" fill="rgba(88,166,255,0.06)" stroke="rgba(88,166,255,0.22)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="18" y="38" fill="#8b949e" font-size="10" font-weight="700">INGEST + INDEX PLANE</text>
+
+          <rect x="24" y="48" width="124" height="42" rx="8" fill="rgba(227,179,65,0.12)" stroke="rgba(227,179,65,0.4)" stroke-width="1.2"/>
+          <text x="86" y="66" text-anchor="middle" fill="#e3b341" font-size="10" font-weight="700">Connectors</text>
+          <text x="86" y="80" text-anchor="middle" fill="#e3b341" font-size="9">Confluence/Jira/Git*</text>
+
+          <path d="M148 69 L180 69" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrow)"/>
+          <rect x="180" y="48" width="124" height="42" rx="8" fill="rgba(88,166,255,0.12)" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+          <text x="242" y="66" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="700">Normalize</text>
+          <text x="242" y="80" text-anchor="middle" fill="#58a6ff" font-size="9">schema + ACL + metadata</text>
+
+          <path d="M304 69 L336 69" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrow)"/>
+          <rect x="336" y="48" width="124" height="42" rx="8" fill="rgba(126,231,135,0.12)" stroke="rgba(126,231,135,0.4)" stroke-width="1.2"/>
+          <text x="398" y="66" text-anchor="middle" fill="#7ee787" font-size="10" font-weight="700">Chunk + Embed</text>
+          <text x="398" y="80" text-anchor="middle" fill="#7ee787" font-size="9">template-aware</text>
+
+          <path d="M460 69 L492 69" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrow)"/>
+          <rect x="492" y="48" width="124" height="42" rx="8" fill="rgba(188,140,255,0.12)" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+          <text x="554" y="66" text-anchor="middle" fill="#bc8cff" font-size="10" font-weight="700">Blue/Green Index</text>
+          <text x="554" y="80" text-anchor="middle" fill="#bc8cff" font-size="9">candidate + cutover</text>
+
+          <path d="M616 69 L648 69" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrow)"/>
+          <rect x="648" y="48" width="124" height="42" rx="8" fill="rgba(247,120,186,0.12)" stroke="rgba(247,120,186,0.4)" stroke-width="1.2"/>
+          <text x="710" y="66" text-anchor="middle" fill="#f778ba" font-size="10" font-weight="700">Vector + Sparse</text>
+          <text x="710" y="80" text-anchor="middle" fill="#f778ba" font-size="9">tenant partitioned</text>
+
+          <path d="M772 69 L804 69" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrow)"/>
+          <rect x="804" y="48" width="124" height="42" rx="8" fill="rgba(88,166,255,0.12)" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+          <text x="866" y="66" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="700">Catalog + Audit</text>
+          <text x="866" y="80" text-anchor="middle" fill="#58a6ff" font-size="9">lineage + RTBF</text>
+
+          <rect x="8" y="124" width="1064" height="92" rx="8" fill="rgba(126,231,135,0.06)" stroke="rgba(126,231,135,0.22)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="18" y="142" fill="#8b949e" font-size="10" font-weight="700">QUERY + HEAL + EVAL PLANE</text>
+
+          <rect x="24" y="154" width="116" height="44" rx="8" fill="rgba(88,166,255,0.12)" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+          <text x="82" y="173" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="700">API Gateway</text>
+          <text x="82" y="187" text-anchor="middle" fill="#58a6ff" font-size="9">version + authz + rate</text>
+
+          <path d="M140 176 L170 176" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrow)"/>
+          <rect x="170" y="154" width="116" height="44" rx="8" fill="rgba(126,231,135,0.12)" stroke="rgba(126,231,135,0.4)" stroke-width="1.2"/>
+          <text x="228" y="173" text-anchor="middle" fill="#7ee787" font-size="10" font-weight="700">Hybrid Retrieve</text>
+          <text x="228" y="187" text-anchor="middle" fill="#7ee787" font-size="9">dense+sparse(+graph)</text>
+
+          <path d="M286 176 L316 176" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrow)"/>
+          <rect x="316" y="154" width="116" height="44" rx="8" fill="rgba(227,179,65,0.12)" stroke="rgba(227,179,65,0.4)" stroke-width="1.2"/>
+          <text x="374" y="173" text-anchor="middle" fill="#e3b341" font-size="10" font-weight="700">Grade + Rerank</text>
+          <text x="374" y="187" text-anchor="middle" fill="#e3b341" font-size="9">evidence quality</text>
+
+          <path d="M432 176 L462 176" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrow)"/>
+          <rect x="462" y="154" width="116" height="44" rx="8" fill="rgba(188,140,255,0.12)" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+          <text x="520" y="173" text-anchor="middle" fill="#bc8cff" font-size="10" font-weight="700">Generate</text>
+          <text x="520" y="187" text-anchor="middle" fill="#bc8cff" font-size="9">answer + citations</text>
+
+          <path d="M578 176 L608 176" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrow)"/>
+          <rect x="608" y="154" width="116" height="44" rx="8" fill="rgba(247,120,186,0.12)" stroke="rgba(247,120,186,0.4)" stroke-width="1.2"/>
+          <text x="666" y="173" text-anchor="middle" fill="#f778ba" font-size="10" font-weight="700">Guardrails</text>
+          <text x="666" y="187" text-anchor="middle" fill="#f778ba" font-size="9">PII + prompt + policy</text>
+
+          <path d="M724 176 L754 176" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrow)"/>
+          <rect x="754" y="154" width="116" height="44" rx="8" fill="rgba(88,166,255,0.12)" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+          <text x="812" y="173" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="700">Observe + Eval</text>
+          <text x="812" y="187" text-anchor="middle" fill="#58a6ff" font-size="9">metrics + regression</text>
+
+          <path d="M870 176 L900 176" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrow)"/>
+          <rect x="900" y="154" width="148" height="44" rx="8" fill="rgba(126,231,135,0.12)" stroke="rgba(126,231,135,0.4)" stroke-width="1.2"/>
+          <text x="974" y="173" text-anchor="middle" fill="#7ee787" font-size="10" font-weight="700">Heal Orchestrator</text>
+          <text x="974" y="187" text-anchor="middle" fill="#7ee787" font-size="9">retry/retrieve/regenerate</text>
+
+          <path d="M974 154 Q974 128 812 128 Q520 128 228 154" stroke="#7ee787" stroke-width="1.2" stroke-dasharray="4,3" fill="none" marker-end="url(#arrow-green)"/>
+
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#30363d"/>
+            </marker>
+            <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#7ee787"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🧱</span> E2E Layer Map</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Layer</th><th>Primary Components</th><th>Enterprise Responsibilities</th></tr></thead>
+          <tbody>
+            <tr><td>Source & Connector Layer</td><td><code>connectors/*</code>, SDK contract (<code>discover/fetch/delta_since/normalize</code>)</td><td>Auth scopes, pagination, delta sync, source-specific ACL capture</td></tr>
+            <tr><td>Ingest & Index Layer</td><td><code>shrag.ingest</code>, workers, chunking templates, embed pipeline</td><td>Idempotent upsert, versioned indexing, replay safety, queue backpressure</td></tr>
+            <tr><td>Retrieval Layer</td><td><code>shrag.retrieve</code>, router, rerank, optional GraphRAG</td><td>Hybrid search SLA path, metadata filters, tenant isolation, low-latency top-k</td></tr>
+            <tr><td>Generation & Safety Layer</td><td><code>shrag.generate</code>, <code>shrag.security</code></td><td>Cited outputs, prompt-injection resistance, PII scrubbing, policy enforcement</td></tr>
+            <tr><td>Heal & Eval Layer</td><td><code>shrag.heal</code>, <code>shrag.reflect</code>, <code>shrag.eval</code></td><td>Automated retry/refine loop, regression gates, faithfulness/recall tracking</td></tr>
+            <tr><td>Operations Layer</td><td>Prometheus/Grafana, runbooks, release gate, evidence bundle</td><td>SLO management, DR drills, audit artifacts, controlled promotion/rollback</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📦</span> Core Modules</div>
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="card-title">API & Gateway</div>
+          <code>shrag.api</code>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px;">External HTTP contract, version checks, auth enforcement, control-plane hooks.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Retrieval & Grading</div>
+          <code>shrag.retrieve</code> <code>shrag.grade</code>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px;">Embedding-based top-k chunk retrieval, evidence ranking and quality signals.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Generation & Security</div>
+          <code>shrag.generate</code> <code>shrag.security</code>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px;">Draft answer synthesis with citations, output safety and prompt injection guards.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Eval & Reflect</div>
+          <code>shrag.eval</code> <code>shrag.reflect</code>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px;">Quality feedback scoring, hallucination detection, heal/retry orchestration.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Heal Loop</div>
+          <code>shrag.heal</code>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px;">Self-correction pipeline; re-retrieval and regeneration on quality signal failure.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Observability</div>
+          <code>Prometheus / Grafana</code>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px;">Structured traces, SLO metrics, incident alerting, burn-rate dashboards.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🌐</span> Deployment Topology</div>
+      <div class="card">
+        <div class="flow-diagram" style="background:transparent;border:none;padding:0;">
+          <svg viewBox="0 0 800 140" width="100%" style="max-height:140px;">
+            <rect x="10" y="20" width="160" height="100" rx="8" fill="rgba(88,166,255,0.06)" stroke="rgba(88,166,255,0.25)" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="90" y="45" text-anchor="middle" fill="#8b949e" font-size="10" font-weight="600">LOAD BALANCER</text>
+            <rect x="25" y="55" width="60" height="30" rx="5" fill="rgba(88,166,255,0.15)" stroke="rgba(88,166,255,0.4)" stroke-width="1"/>
+            <text x="55" y="73" text-anchor="middle" fill="#58a6ff" font-size="10">API-1</text>
+            <rect x="100" y="55" width="60" height="30" rx="5" fill="rgba(88,166,255,0.15)" stroke="rgba(88,166,255,0.4)" stroke-width="1"/>
+            <text x="130" y="73" text-anchor="middle" fill="#58a6ff" font-size="10">API-n</text>
+            <text x="90" y="108" text-anchor="middle" fill="#8b949e" font-size="9">Stateless replicas</text>
+
+            <path d="M170 70 L210 70" stroke="#30363d" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+            <rect x="210" y="20" width="160" height="100" rx="8" fill="rgba(227,179,65,0.06)" stroke="rgba(227,179,65,0.25)" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="290" y="45" text-anchor="middle" fill="#8b949e" font-size="10" font-weight="600">INGEST WORKERS</text>
+            <rect x="225" y="55" width="60" height="30" rx="5" fill="rgba(227,179,65,0.15)" stroke="rgba(227,179,65,0.4)" stroke-width="1"/>
+            <text x="255" y="73" text-anchor="middle" fill="#e3b341" font-size="10">Queue</text>
+            <rect x="300" y="55" width="60" height="30" rx="5" fill="rgba(227,179,65,0.15)" stroke="rgba(227,179,65,0.4)" stroke-width="1"/>
+            <text x="330" y="73" text-anchor="middle" fill="#e3b341" font-size="10">Workers</text>
+            <text x="290" y="108" text-anchor="middle" fill="#8b949e" font-size="9">Managed queue pool</text>
+
+            <path d="M370 70 L410 70" stroke="#30363d" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+            <rect x="410" y="20" width="160" height="100" rx="8" fill="rgba(126,231,135,0.06)" stroke="rgba(126,231,135,0.25)" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="490" y="45" text-anchor="middle" fill="#8b949e" font-size="10" font-weight="600">VECTOR STORE</text>
+            <rect x="425" y="55" width="130" height="30" rx="5" fill="rgba(126,231,135,0.15)" stroke="rgba(126,231,135,0.4)" stroke-width="1"/>
+            <text x="490" y="74" text-anchor="middle" fill="#7ee787" font-size="10">Tenant-partitioned index</text>
+            <text x="490" y="108" text-anchor="middle" fill="#8b949e" font-size="9">Shared + isolated tiers</text>
+
+            <path d="M570 70 L610 70" stroke="#30363d" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+            <rect x="610" y="20" width="160" height="100" rx="8" fill="rgba(188,140,255,0.06)" stroke="rgba(188,140,255,0.25)" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="690" y="45" text-anchor="middle" fill="#8b949e" font-size="10" font-weight="600">OBSERVABILITY</text>
+            <rect x="625" y="55" width="130" height="30" rx="5" fill="rgba(188,140,255,0.15)" stroke="rgba(188,140,255,0.4)" stroke-width="1"/>
+            <text x="690" y="74" text-anchor="middle" fill="#bc8cff" font-size="10">Prometheus / Grafana</text>
+            <text x="690" y="108" text-anchor="middle" fill="#8b949e" font-size="9">SLO + incident alerts</text>
+
+            <defs>
+              <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#30363d"/>
+              </marker>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SLO ═══ -->
+  <div id="slo" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">Reliability</div>
+      <h2>Service Level Objectives</h2>
+      <p>Monthly targets, error budgets, and burn-rate alert thresholds.</p>
+    </div>
+
+    <div class="section">
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="card-title">API Availability</div>
+          <div class="card-value pass">99.9%</div>
+          <div class="card-sub">~43m 49s downtime/month</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Retrieval Availability</div>
+          <div class="card-value pass">99.5%</div>
+          <div class="card-sub">Critical retrieval path</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Golden Eval Pass Rate</div>
+          <div class="card-value pass">≥95%</div>
+          <div class="card-sub">Pinned dataset</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">⚡</span> Latency SLOs</div>
+      <div class="card">
+        <div class="slo-meter">
+          <div class="slo-meter-label">
+            <span class="slo-meter-name"><code>/health</code> p95</span>
+            <span class="slo-meter-value" style="color:var(--accent2)">&lt;200ms</span>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-bar bar-pass" style="width:80%"></div>
+          </div>
+        </div>
+        <div class="slo-meter">
+          <div class="slo-meter-label">
+            <span class="slo-meter-name">Retrieval endpoint p95</span>
+            <span class="slo-meter-value" style="color:var(--accent2)">&lt;1,200ms · actual 780ms</span>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-bar bar-pass" style="width:65%"></div>
+          </div>
+        </div>
+        <div class="slo-meter">
+          <div class="slo-meter-label">
+            <span class="slo-meter-name">Retrieval endpoint p99</span>
+            <span class="slo-meter-value" style="color:var(--accent2)">&lt;2,500ms</span>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-bar bar-pass" style="width:75%"></div>
+          </div>
+        </div>
+        <div class="slo-meter" style="margin-bottom:0">
+          <div class="slo-meter-label">
+            <span class="slo-meter-name">Hallucination guardrail violations</span>
+            <span class="slo-meter-value" style="color:var(--accent2)">&lt;1% of samples</span>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-bar bar-pass" style="width:20%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🔥</span> Error Budget Burn Alerts</div>
+      <div class="grid grid-2">
+        <div class="card" style="border-color:rgba(247,120,186,.3)">
+          <div class="card-title">Fast Burn</div>
+          <div style="font-size:20px;font-weight:700;color:var(--pink);margin-bottom:4px;">&gt;10%</div>
+          <div style="font-size:12px;color:var(--muted);">budget consumed in <strong style="color:var(--text)">1 hour</strong></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;">Page immediately. Likely active incident.</div>
+        </div>
+        <div class="card" style="border-color:rgba(227,179,65,.3)">
+          <div class="card-title">Slow Burn</div>
+          <div style="font-size:20px;font-weight:700;color:var(--yellow);margin-bottom:4px;">&gt;25%</div>
+          <div style="font-size:12px;color:var(--muted);">budget consumed in <strong style="color:var(--text)">24 hours</strong></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;">Escalate to on-call. Investigate before end of day.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📅</span> Review Cadence</div>
+      <div class="card">
+        <ul class="steps">
+          <li>
+            <div class="step-num">W</div>
+            <div class="step-text">Weekly SLO review — check burn rate, alert history, and error budget balance.</div>
+          </li>
+          <li>
+            <div class="step-num">M</div>
+            <div class="step-text">Monthly objective reset — recalibrate targets with incident-driven adjustments and postmortem action items.</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SCALE ═══ -->
+  <div id="scale" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">Reliability</div>
+      <h2>Scale 500K Blueprint</h2>
+      <p>Capacity targets and architecture for 500,000+ document enterprise production.</p>
+    </div>
+
+    <div class="section">
+      <div class="grid grid-4">
+        <div class="card">
+          <div class="card-title">Corpus Size</div>
+          <div class="card-value" style="color:var(--accent)">500K</div>
+          <div class="card-sub">Mixed docs + attachments</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Bulk Ingest</div>
+          <div class="card-value pass">52K/hr</div>
+          <div class="card-sub">Target ≥50K/hr ✓</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Delta Sync p95</div>
+          <div class="card-value pass">≤15m</div>
+          <div class="card-sub">Source → searchable index</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Retrieval p95</div>
+          <div class="card-value pass">780ms</div>
+          <div class="card-sub">Target &lt;900ms ✓</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🗂️</span> Partitioning Strategy</div>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title">Partition Key</div>
+          <code>tenant_id + corpus_namespace</code>
+          <div class="divider"></div>
+          <div class="card-title">Metadata Indexes</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+            <code>tenant_id</code><code>source_id</code><code>version_id</code><code>updated_at</code><code>doc_id</code>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Vector Storage Tiers</div>
+          <table style="margin-top:6px;">
+            <tbody>
+              <tr>
+                <td><span class="badge badge-info">Shared</span></td>
+                <td style="font-size:12px;">Payload-filtered shared collection with strict tenant filters</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-pass">Isolated</span></td>
+                <td style="font-size:12px;">Dedicated collection per tenant namespace</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🔵🟢</span> Blue/Green Index Lifecycle</div>
+      <div class="card">
+        <div class="grid grid-2" style="margin-bottom:16px;">
+          <div style="background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.3);border-radius:6px;padding:12px;">
+            <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:4px;">ACTIVE INDEX</div>
+            <code>active_index_version</code>
+            <div style="font-size:12px;color:var(--muted);margin-top:8px;">Serves live traffic. Delta upserts keyed by <code>source_id + version_id</code>.</div>
+          </div>
+          <div style="background:rgba(126,231,135,.08);border:1px solid rgba(126,231,135,.3);border-radius:6px;padding:12px;">
+            <div style="font-size:11px;font-weight:600;color:var(--accent2);margin-bottom:4px;">CANDIDATE INDEX</div>
+            <code>candidate_index_version</code>
+            <div style="font-size:12px;color:var(--muted);margin-top:8px;">Bulk rebuilds here only. Cutover after shadow-read parity + quality gates.</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);padding:10px;background:var(--surface2);border-radius:6px;">
+          🔄 Rollback path restores last healthy active index version. No production promotion if scale gates fail or eval regression exceeds budget.
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🧪</span> Required Validation Tests</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Test File</th><th>Validates</th></tr></thead>
+          <tbody>
+            <tr><td><code>tests/scale/ingest_500k.py</code></td><td>Throughput and queue-lag assertions</td></tr>
+            <tr><td><code>tests/scale/query_500k.py</code></td><td>Retrieval latency and quality at corpus scale</td></tr>
+            <tr><td><code>tests/scale/failure_chaos.py</code></td><td>Outage/recovery and cutover rollback drills</td></tr>
+            <tr><td><code>src/shrag/eval/scale_gate.py</code></td><td>Promotion gate for latency/quality thresholds</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🧭</span> ERB Benchmark Harness (EnterpriseRAG-Bench)</div>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title">Compatibility Coverage</div>
+          <div class="gate-item">
+            <div class="gate-icon">✓</div>
+            <div class="gate-label">Dataset layouts: <code>documents/&lt;source&gt;</code> and <code>generated_data/sources/&lt;source&gt;</code></div>
+          </div>
+          <div class="gate-item">
+            <div class="gate-icon">✓</div>
+            <div class="gate-label">Evaluator formats: JSONL rows and <code>metrics_eval_results.json</code> with <code>questions[]</code></div>
+          </div>
+          <div class="gate-item">
+            <div class="gate-icon">✓</div>
+            <div class="gate-label">CLI compatibility: <code>--results-file</code> preferred, fallback to <code>--output-dir</code></div>
+          </div>
+          <div class="gate-item">
+            <div class="gate-icon">✓</div>
+            <div class="gate-label">Per-question query resilience with optional <code>--fail-fast</code> strict mode</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Env-Driven Request Headers</div>
+          <table>
+            <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td><code>SHRAG_ERB_API_VERSION</code></td><td>Versioned API contract for <code>/docs</code> and <code>/query</code></td></tr>
+              <tr><td><code>SHRAG_ERB_ROLES</code></td><td>Role header for ACL-aware benchmark runs</td></tr>
+              <tr><td><code>SHRAG_ERB_USER_ID</code></td><td>Explicit user identity header for policy checks</td></tr>
+              <tr><td><code>SHRAG_ERB_TENANT_ID</code></td><td>Tenant isolation for benchmark corpus</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <div class="card-title">Execution Path</div>
+        <pre>make erb-bench-ingest ERB_DIR=&lt;path-to-EnterpriseRAG-Bench&gt; SHRAG_BASE_URL=http://127.0.0.1:8000
+make erb-bench-eval   ERB_DIR=&lt;path-to-EnterpriseRAG-Bench&gt; SHRAG_BASE_URL=http://127.0.0.1:8000
+make erb-bench-report
+
+# Full chain
+make erb-bench ERB_DIR=&lt;path-to-EnterpriseRAG-Bench&gt; SHRAG_BASE_URL=http://127.0.0.1:8000</pre>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;">
+          Artifacts: <code>.state/erb-ingest-manifest.json</code>, <code>.state/erb-answers.jsonl</code>, <code>.state/erb-results/*</code>, <code>.state/erb-bench-report.json</code>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TUTORIAL ═══ -->
+  <div id="tutorial" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">Engineering</div>
+      <h2>Tutorial: Run SHRAG End-to-End</h2>
+      <p>Hands-on commands for local RAG serving, benchmark execution, fine-tuning readiness flow, and enterprise verification gates.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">✅</span> Prerequisites</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Requirement</th><th>Command / Value</th></tr></thead>
+          <tbody>
+            <tr><td>Python environment</td><td><code>.venv</code> with project dependencies installed</td></tr>
+            <tr><td>Repo root</td><td><code>cd self-healing-rag</code></td></tr>
+            <tr><td>State directory</td><td><code>mkdir -p .state</code></td></tr>
+            <tr><td>ERB path (optional benchmark)</td><td><code>ERB_DIR=/path/to/EnterpriseRAG-Bench</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🚀</span> 1) Start the RAG API</div>
+      <div class="card">
+        <pre>cd self-healing-rag
+
+# Optional benchmark-friendly limit
+export SHRAG_RATE_LIMIT_PER_MINUTE=10000
+
+# Start API
+PYTHONPATH=src ./.venv/bin/python -m uvicorn shrag.api.main:app --host 127.0.0.1 --port 8000</pre>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;">Health check:</div>
+        <pre>curl -sS http://127.0.0.1:8000/healthz
+curl -sS http://127.0.0.1:8000/v1/healthz</pre>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📥</span> 2) Ingest + Query Basic RAG Flow</div>
+      <div class="card">
+        <pre># Ingest two docs
+curl -sS -X POST http://127.0.0.1:8000/docs \
+  -H "Content-Type: application/json" \
+  -H "X-API-Version: 2026-05-01" \
+  -H "X-Tenant-Id: demo-tenant" \
+  -H "X-Roles: writer" \
+  -H "X-User-Id: demo-user" \
+  -d '{"documents":[{"document_id":"doc-1","text":"RAG combines retrieval with generation."},{"document_id":"doc-2","text":"Hybrid retrieval uses dense and sparse search together."}]}'
+
+# Query
+curl -sS -X POST http://127.0.0.1:8000/query \
+  -H "Content-Type: application/json" \
+  -H "X-API-Version: 2026-05-01" \
+  -H "X-Tenant-Id: demo-tenant" \
+  -H "X-Roles: reader" \
+  -H "X-User-Id: demo-user" \
+  -d '{"query":"What is hybrid retrieval?","top_k":5}'</pre>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🧪</span> 3) Run ERB Benchmark Harness</div>
+      <div class="card">
+        <div class="card-title">Env-Driven Benchmark Headers</div>
+        <pre>export SHRAG_ERB_API_VERSION=2026-05-01
+export SHRAG_ERB_ROLES=writer
+export SHRAG_ERB_USER_ID=erb-bench-runner
+export SHRAG_ERB_TENANT_ID=erb-bench</pre>
+        <div class="divider"></div>
+        <div class="card-title">Commands</div>
+        <pre># Full chain (requires ERB checkout)
+make erb-bench ERB_DIR=/path/to/EnterpriseRAG-Bench SHRAG_BASE_URL=http://127.0.0.1:8000
+
+# Or phase-by-phase
+make erb-bench-ingest ERB_DIR=/path/to/EnterpriseRAG-Bench SHRAG_BASE_URL=http://127.0.0.1:8000
+make erb-bench-eval   ERB_DIR=/path/to/EnterpriseRAG-Bench SHRAG_BASE_URL=http://127.0.0.1:8000
+make erb-bench-report</pre>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;">
+          Outputs: <code>.state/erb-ingest-manifest.json</code>, <code>.state/erb-answers.jsonl</code>, <code>.state/erb-results/*</code>, <code>.state/erb-bench-report.json</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🧠</span> 4) Run Fine-Tuning Readiness Lane</div>
+      <div class="card">
+        <pre># Simulated local lane
+make finetune-readiness-simulated
+
+# Inspect generated reports
+ls -1 .state/finetune-*.json
+
+# Strict production verification (fails if artifacts are simulated)
+make finetune-readiness-production-check</pre>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🛂</span> 5) Run Enterprise Release Gates</div>
+      <div class="card">
+        <pre># Core release gate
+make release-gate
+
+# Strict gate with external evidence expectations
+make release-gate-strict
+
+# Enterprise audit bundle
+make enterprise-readiness-audit-strict
+make publish-evidence</pre>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🧩</span> Existing E2E Implementation Components</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Stage</th><th>Implementation</th><th>What It Covers</th></tr></thead>
+          <tbody>
+            <tr><td>API Gateway</td><td><code>src/shrag/api/routes.py</code></td><td>Versioning, auth context, rate limits, request envelopes</td></tr>
+            <tr><td>Ingestion</td><td><code>src/shrag/ingest/*</code>, <code>tests/bench/ingest_erb.py</code></td><td>Document ingest, idempotency, benchmark import flow</td></tr>
+            <tr><td>Retrieval</td><td><code>src/shrag/retrieve/*</code></td><td>Hybrid retrieval path, rerank/router, optional graph mode</td></tr>
+            <tr><td>Generation</td><td><code>src/shrag/generate/*</code></td><td>Answer generation with provider abstractions and safeguards</td></tr>
+            <tr><td>Security</td><td><code>src/shrag/security/*</code></td><td>PII, prompt-guard, authz, RTBF handling</td></tr>
+            <tr><td>Self-Heal/Reflect</td><td><code>src/shrag/heal/*</code>, <code>src/shrag/reflect/*</code></td><td>Retry/refine orchestration and quality repair loops</td></tr>
+            <tr><td>Evaluation</td><td><code>src/shrag/eval/*</code>, <code>tests/bench/*</code>, <code>tests/scale/*</code></td><td>Regression gates, scale checks, ERB adapter/report pipeline</td></tr>
+            <tr><td>Operations</td><td><code>ops/verification/*</code>, <code>docs/runbooks/*</code></td><td>Release gate, evidence publishing, runbooks and DR checks</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ H100 USE CASE ═══ -->
+  <div id="h100-usecase" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">Engineering</div>
+      <h2>Enterprise AI CoE H100 Use Case</h2>
+      <p>How Self-Healing RAG connects to the enterprise OSS LLM fine-tuning pipeline for engineering and operations assistants.</p>
+    </div>
+
+    <div class="section">
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="card-title">Primary Objective</div>
+          <div style="font-size:14px;color:var(--text);font-weight:600;">Secure internal enterprise AI assistant platform</div>
+          <div class="card-sub">Engineering + operations knowledge and workflow support</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Model Strategy</div>
+          <div style="font-size:14px;color:var(--accent);font-weight:700;">Open-weight OSS LLMs</div>
+          <div class="card-sub">LoRA/QLoRA SFT for behavior, RAG for dynamic knowledge</div>
+        </div>
+        <div class="card">
+          <div class="card-title">GPU Request</div>
+          <div style="font-size:14px;color:var(--purple);font-weight:700;">H100 Phase 1: 1–2, Phase 2: 4–8</div>
+          <div class="card-sub">Training, embeddings, evaluation, batch inference</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🔗</span> SHRAG Integration in Fine-Tuning Pipeline</div>
+      <div class="flow-diagram">
+        <svg viewBox="0 0 1120 230" width="100%" style="max-height:230px;">
+          <rect x="10" y="18" width="1098" height="78" rx="8" fill="rgba(227,179,65,0.08)" stroke="rgba(227,179,65,0.25)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="20" y="36" fill="#8b949e" font-size="10" font-weight="700">KNOWLEDGE + RAG PLANE (SHRAG CURRENT IMPLEMENTATION)</text>
+
+          <rect x="26" y="46" width="148" height="40" rx="7" fill="rgba(227,179,65,0.14)" stroke="rgba(227,179,65,0.45)" stroke-width="1.2"/>
+          <text x="100" y="63" text-anchor="middle" fill="#e3b341" font-size="10" font-weight="700">Confluence/Jira/Git/SharePoint</text>
+          <text x="100" y="76" text-anchor="middle" fill="#e3b341" font-size="9">enterprise sources</text>
+
+          <path d="M174 66 L206 66" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrh100)"/>
+          <rect x="206" y="46" width="138" height="40" rx="7" fill="rgba(88,166,255,0.14)" stroke="rgba(88,166,255,0.45)" stroke-width="1.2"/>
+          <text x="275" y="63" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="700">SHRAG Ingest</text>
+          <text x="275" y="76" text-anchor="middle" fill="#58a6ff" font-size="9">chunk + metadata + ACL</text>
+
+          <path d="M344 66 L376 66" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrh100)"/>
+          <rect x="376" y="46" width="138" height="40" rx="7" fill="rgba(126,231,135,0.14)" stroke="rgba(126,231,135,0.45)" stroke-width="1.2"/>
+          <text x="445" y="63" text-anchor="middle" fill="#7ee787" font-size="10" font-weight="700">SHRAG Retrieve</text>
+          <text x="445" y="76" text-anchor="middle" fill="#7ee787" font-size="9">hybrid + rerank</text>
+
+          <path d="M514 66 L546 66" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrh100)"/>
+          <rect x="546" y="46" width="138" height="40" rx="7" fill="rgba(188,140,255,0.14)" stroke="rgba(188,140,255,0.45)" stroke-width="1.2"/>
+          <text x="615" y="63" text-anchor="middle" fill="#bc8cff" font-size="10" font-weight="700">SHRAG Generate</text>
+          <text x="615" y="76" text-anchor="middle" fill="#bc8cff" font-size="9">cited responses</text>
+
+          <path d="M684 66 L716 66" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrh100)"/>
+          <rect x="716" y="46" width="170" height="40" rx="7" fill="rgba(247,120,186,0.14)" stroke="rgba(247,120,186,0.45)" stroke-width="1.2"/>
+          <text x="801" y="63" text-anchor="middle" fill="#f778ba" font-size="10" font-weight="700">SHRAG Security + Heal</text>
+          <text x="801" y="76" text-anchor="middle" fill="#f778ba" font-size="9">PII/prompt guard + reflect</text>
+
+          <path d="M886 66 L918 66" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrh100)"/>
+          <rect x="918" y="46" width="174" height="40" rx="7" fill="rgba(88,166,255,0.14)" stroke="rgba(88,166,255,0.45)" stroke-width="1.2"/>
+          <text x="1005" y="63" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="700">SHRAG Eval + Evidence</text>
+          <text x="1005" y="76" text-anchor="middle" fill="#58a6ff" font-size="9">gates + reports + runbooks</text>
+
+          <rect x="10" y="116" width="1098" height="98" rx="8" fill="rgba(188,140,255,0.08)" stroke="rgba(188,140,255,0.25)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="20" y="134" fill="#8b949e" font-size="10" font-weight="700">FINE-TUNING PLANE (H100 ENABLED)</text>
+
+          <rect x="26" y="148" width="182" height="44" rx="7" fill="rgba(188,140,255,0.14)" stroke="rgba(188,140,255,0.45)" stroke-width="1.2"/>
+          <text x="117" y="167" text-anchor="middle" fill="#bc8cff" font-size="10" font-weight="700">SFT Dataset Builder</text>
+          <text x="117" y="181" text-anchor="middle" fill="#bc8cff" font-size="9">from SHRAG traces + feedback</text>
+
+          <path d="M208 170 L242 170" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrh100)"/>
+          <rect x="242" y="148" width="174" height="44" rx="7" fill="rgba(188,140,255,0.14)" stroke="rgba(188,140,255,0.45)" stroke-width="1.2"/>
+          <text x="329" y="167" text-anchor="middle" fill="#bc8cff" font-size="10" font-weight="700">LoRA/QLoRA Training</text>
+          <text x="329" y="181" text-anchor="middle" fill="#bc8cff" font-size="9">H100 fine-tuning lane</text>
+
+          <path d="M416 170 L450 170" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrh100)"/>
+          <rect x="450" y="148" width="174" height="44" rx="7" fill="rgba(188,140,255,0.14)" stroke="rgba(188,140,255,0.45)" stroke-width="1.2"/>
+          <text x="537" y="167" text-anchor="middle" fill="#bc8cff" font-size="10" font-weight="700">Model Evaluation</text>
+          <text x="537" y="181" text-anchor="middle" fill="#bc8cff" font-size="9">quality + safety + cost</text>
+
+          <path d="M624 170 L658 170" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrh100)"/>
+          <rect x="658" y="148" width="176" height="44" rx="7" fill="rgba(188,140,255,0.14)" stroke="rgba(188,140,255,0.45)" stroke-width="1.2"/>
+          <text x="746" y="167" text-anchor="middle" fill="#bc8cff" font-size="10" font-weight="700">Controlled Promotion</text>
+          <text x="746" y="181" text-anchor="middle" fill="#bc8cff" font-size="9">approval + rollback plan</text>
+
+          <path d="M834 170 L868 170" stroke="#30363d" stroke-width="1.4" marker-end="url(#arrh100)"/>
+          <rect x="868" y="148" width="224" height="44" rx="7" fill="rgba(188,140,255,0.14)" stroke="rgba(188,140,255,0.45)" stroke-width="1.2"/>
+          <text x="980" y="167" text-anchor="middle" fill="#bc8cff" font-size="10" font-weight="700">Serve via SHRAG API + Agents</text>
+          <text x="980" y="181" text-anchor="middle" fill="#bc8cff" font-size="9">RAG grounding remains default</text>
+
+          <path d="M980 148 Q980 106 615 106 Q275 106 117 148" stroke="#7ee787" stroke-width="1.1" stroke-dasharray="4,3" fill="none" marker-end="url(#arrh100-green)"/>
+
+          <defs>
+            <marker id="arrh100" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#30363d"/>
+            </marker>
+            <marker id="arrh100-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#7ee787"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🧠</span> Why SHRAG + H100 Is the Right Split</div>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title">Fine-Tune Into Model Weights</div>
+          <ul style="list-style:none;font-size:13px;color:var(--text);line-height:1.9;">
+            <li>• Enterprise terminology and style</li>
+            <li>• Workflow reasoning and escalation behavior</li>
+            <li>• Tool-usage patterns and structured response formats</li>
+            <li>• Coding and troubleshooting heuristics</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">Keep in RAG Retrieval Layer</div>
+          <ul style="list-style:none;font-size:13px;color:var(--text);line-height:1.9;">
+            <li>• Confluence/Jira/SharePoint/Git rapidly changing content</li>
+            <li>• Runbooks, incident records, release notes</li>
+            <li>• Policies/procedures and operational docs</li>
+            <li>• Access-controlled sensitive knowledge</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <div style="font-size:12px;color:var(--muted);">
+          This preserves freshness and governance while minimizing retraining frequency and H100 spend.
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">⚙️</span> Execution Commands for This Use Case</div>
+      <div class="card">
+        <pre># 1) Start API
+PYTHONPATH=src ./.venv/bin/python -m uvicorn shrag.api.main:app --host 127.0.0.1 --port 8000
+
+# 2) Validate RAG/E2E gates
+make local-ci-gate
+make release-gate-strict
+
+# 3) Prepare and validate fine-tuning lane
+make finetune-readiness-simulated
+make finetune-readiness
+
+# 4) ERB benchmark (enterprise-like corpus)
+make erb-bench ERB_DIR=/path/to/EnterpriseRAG-Bench SHRAG_BASE_URL=http://127.0.0.1:8000</pre>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📌</span> Use Case Outcomes & KPI Mapping</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Proposal KPI</th><th>SHRAG Signal / Artifact</th><th>Implementation Anchor</th></tr></thead>
+          <tbody>
+            <tr><td>Retrieval quality and citation reliability</td><td><code>.state/erb-bench-report.json</code>, retrieval metrics</td><td><code>tests/bench/erb_report.py</code>, <code>src/shrag/eval/*</code></td></tr>
+            <tr><td>Hallucination and faithfulness control</td><td>Guardrails + reflect/heal loops</td><td><code>src/shrag/security/*</code>, <code>src/shrag/reflect/*</code>, <code>src/shrag/heal/*</code></td></tr>
+            <tr><td>Security/governance readiness</td><td>Release strict gate + evidence bundle</td><td><code>ops/verification/release_gate.py</code>, <code>docs/evidence/*</code></td></tr>
+            <tr><td>Fine-tuning production readiness</td><td>Readiness report and promotion checks</td><td><code>ops/verification/run_finetune_readiness.py</code></td></tr>
+            <tr><td>Operational resilience (RTO/RPO/SLO)</td><td>Scale/DR reports and runbooks</td><td><code>tests/scale/*</code>, <code>ops/drills/*</code>, <code>docs/runbooks/*</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CONNECTORS ═══ -->
+  <div id="connectors" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">Engineering</div>
+      <h2>Connectors SDK</h2>
+      <p>Strict connector contract for integrating new sources without touching ingest core.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📋</span> Required Contract Methods</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Method</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>authenticate(config)</code></td><td>Verify credentials and minimum required scopes</td></tr>
+            <tr><td><code>discover(cursor)</code></td><td>Paginated object discovery</td></tr>
+            <tr><td><code>fetch(object_ref)</code></td><td>Content + metadata retrieval</td></tr>
+            <tr><td><code>checkpoint() / resume(checkpoint)</code></td><td>Resumable sync state management</td></tr>
+            <tr><td><code>delta_since(cursor)</code></td><td>Incremental updates and deletes</td></tr>
+            <tr><td><code>normalize(raw)</code></td><td>Canonical document schema mapping</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🪪</span> Canonical Identity Contract</div>
+      <div class="card">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;flex:1;min-width:140px;">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">SOURCE TYPE</div>
+            <code>source_type</code>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;flex:1;min-width:140px;">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">STABLE OBJECT ID</div>
+            <code>source_id</code>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;flex:1;min-width:140px;">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">ETAG / VERSION</div>
+            <code>version_id</code>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;flex:1;min-width:140px;">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">TENANT</div>
+            <code>tenant_id</code>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;flex:1;min-width:140px;">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">TIMESTAMP</div>
+            <code>updated_at</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🔌</span> Supported Enterprise Sources</div>
+      <div class="connector-grid">
+        <div class="connector-chip"><div class="chip-dot"></div> Confluence</div>
+        <div class="connector-chip"><div class="chip-dot"></div> Jira</div>
+        <div class="connector-chip"><div class="chip-dot"></div> Notion</div>
+        <div class="connector-chip"><div class="chip-dot"></div> SharePoint</div>
+        <div class="connector-chip"><div class="chip-dot"></div> Google Drive</div>
+        <div class="connector-chip"><div class="chip-dot"></div> GitHub</div>
+        <div class="connector-chip"><div class="chip-dot"></div> GitLab</div>
+        <div class="connector-chip"><div class="chip-dot"></div> WebDAV / S3</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">✅</span> Enterprise Acceptance Criteria</div>
+      <div class="card">
+        <div class="gate-item">
+          <div class="gate-icon">✓</div>
+          <div class="gate-label">Provider pagination + bounded retries with jitter</div>
+        </div>
+        <div class="gate-item">
+          <div class="gate-icon">✓</div>
+          <div class="gate-label">Tombstones/deletes via <code>delta_since</code></div>
+        </div>
+        <div class="gate-item">
+          <div class="gate-icon">✓</div>
+          <div class="gate-label">ACL principal/group metadata for retrieval-time authorization filtering</div>
+        </div>
+        <div class="gate-item">
+          <div class="gate-icon">✓</div>
+          <div class="gate-label">Idempotent replay: same <code>source_id+version_id</code> must not duplicate chunks</div>
+        </div>
+        <div class="gate-item">
+          <div class="gate-icon">✓</div>
+          <div class="gate-label">Connector labels: <code>source_type</code>, <code>connector_version</code>, <code>tenant_id</code></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📁</span> GitHub/GitLab Ingestion Policy</div>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title">Required Controls</div>
+          <div style="font-size:12px;color:var(--text);line-height:2;">
+            <div><code>ref</code> — branch, tag, or pinned commit SHA</div>
+            <div><code>include_globs</code> / <code>exclude_globs</code></div>
+            <div><code>allowed_extensions</code> — strict allowlist</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Default Blocklist</div>
+          <div style="font-size:12px;color:var(--muted);line-height:2;">
+            Binary/media artifacts<br>
+            <code>node_modules/</code> <code>dist/</code> <code>build/</code><br>
+            Cache directories
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FINE-TUNE ═══ -->
+  <div id="finetune" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">Engineering</div>
+      <h2>Fine-Tuning Readiness Gate</h2>
+      <p>Machine-checkable readiness gate for the H100 enterprise fine-tuning lane.</p>
+    </div>
+
+    <div class="section">
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="card-title">Overall Gate</div>
+          <div class="card-value pass">PASSED</div>
+          <div class="card-sub">run: train-20260510-001</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Base Model</div>
+          <div style="font-size:18px;font-weight:700;color:var(--accent)">eng-assistant-v1</div>
+          <div class="card-sub">engineering-corpus · 2026.05.10</div>
+        </div>
+        <div class="card">
+          <div class="card-title">GPU Requirement</div>
+          <div style="font-size:18px;font-weight:700;color:var(--purple)">H100</div>
+          <div class="card-sub">NVIDIA-H100 enforced</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📋</span> Validation Rules</div>
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="card-title" style="color:var(--accent)">Dataset</div>
+          <div class="gate-item" style="padding:6px 0">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;">Non-empty <code>dataset_id</code> + <code>dataset_version</code></div>
+          </div>
+          <div class="gate-item" style="padding:6px 0">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;"><code>record_count &gt; 0</code></div>
+          </div>
+          <div class="gate-item" style="padding:6px 0">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;"><code>pii_scrubbed = true</code></div>
+          </div>
+          <div class="gate-item" style="padding:6px 0">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;"><code>license_policy_passed = true</code></div>
+          </div>
+          <div class="gate-item" style="padding:6px 0;border:none">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;">At least one source system listed</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--purple)">Training</div>
+          <div class="gate-item" style="padding:6px 0">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;">Non-empty <code>run_id</code> + <code>base_model</code></div>
+          </div>
+          <div class="gate-item" style="padding:6px 0">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;"><code>gpu_count &gt; 0</code></div>
+          </div>
+          <div class="gate-item" style="padding:6px 0">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;">Method: <code>lora|qlora|sft</code></div>
+          </div>
+          <div class="gate-item" style="padding:6px 0">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;"><code>eval_passed = true</code></div>
+          </div>
+          <div class="gate-item" style="padding:6px 0;border:none">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;">GPU type must be <code>H100</code></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--pink)">Promotion</div>
+          <div class="gate-item" style="padding:6px 0">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;">Candidate model id present</div>
+          </div>
+          <div class="gate-item" style="padding:6px 0">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;">Explicit approval present</div>
+          </div>
+          <div class="gate-item" style="padding:6px 0">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;">Approver identity present</div>
+          </div>
+          <div class="gate-item" style="padding:6px 0">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;">Change ticket present</div>
+          </div>
+          <div class="gate-item" style="padding:6px 0;border:none">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div class="gate-label" style="font-size:12px;">Rollback plan reference present</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">⚙️</span> Make Commands</div>
+      <div class="card">
+        <pre>
+# Full simulated pipeline
+make finetune-readiness-simulated
+
+# Individual stages
+make finetune-dataset-simulated
+make finetune-train-simulated
+make finetune-render-job
+make finetune-promote-simulated
+
+# Gate validation
+make finetune-readiness
+
+# Production-only (rejects simulated artifacts)
+make finetune-readiness-production-check
+
+# Strict release lane
+make release-gate-strict</pre>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🔐</span> Env-Driven Controls</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Variable</th><th>Value</th><th>Effect</th></tr></thead>
+          <tbody>
+            <tr><td><code>SHRAG_FINETUNE_PROVENANCE_MODE</code></td><td><code>simulated</code> / <code>production</code></td><td>Default simulated for local. Production required in strict gate.</td></tr>
+            <tr><td><code>SHRAG_RELEASE_REQUIRE_FINETUNE_REPORT</code></td><td><code>true</code></td><td>Enforces readiness report in <code>release-gate</code>.</td></tr>
+            <tr><td><code>SHRAG_MODEL_REGISTRY_BACKEND</code></td><td><code>local_json</code> / <code>http</code></td><td>Registry backend selection.</td></tr>
+            <tr><td><code>SHRAG_MODEL_REGISTRY_HTTP_URL</code></td><td><code>&lt;base-url&gt;</code></td><td>Required when backend = <code>http</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ API ═══ -->
+  <div id="api" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">Engineering</div>
+      <h2>API Versioning</h2>
+      <p>Date-based versioning contract with deprecation policy and rollout procedure.</p>
+    </div>
+
+    <div class="section">
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="card-title">Version Header</div>
+          <code style="font-size:13px;">X-API-Version</code>
+          <div class="card-sub" style="margin-top:8px;">Required on all requests</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Current Version</div>
+          <div style="font-size:18px;font-weight:700;color:var(--accent)">2026-05-01</div>
+          <div class="card-sub">Date-based versioning</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Deprecation Window</div>
+          <div style="font-size:18px;font-weight:700;color:var(--yellow)">90 days</div>
+          <div class="card-sub">Minimum for non-critical</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">⚠️</span> Error Responses</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Condition</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Missing <code>X-API-Version</code> header</td>
+              <td><span class="badge badge-fail">HTTP 400</span></td>
+            </tr>
+            <tr>
+              <td>Unsupported version value</td>
+              <td><span class="badge badge-warn">HTTP 426</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🚀</span> Rollout Process</div>
+      <div class="card">
+        <ul class="steps">
+          <li>
+            <div class="step-num">1</div>
+            <div class="step-text">Introduce new version in allowlist. No traffic change yet.</div>
+          </li>
+          <li>
+            <div class="step-num">2</div>
+            <div class="step-text">Add compatibility tests for both old and new versions. Both must pass CI.</div>
+          </li>
+          <li>
+            <div class="step-num">3</div>
+            <div class="step-text">Announce migration window. Monitor adoption metrics. After 90-day window, remove old version.</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📜</span> Change Policy</div>
+      <div class="card" style="font-size:13px;color:var(--text);">
+        <div style="display:flex;gap:16px;margin-bottom:12px;">
+          <span class="badge badge-pass">Additive first</span>
+          <span style="color:var(--muted);font-size:12px;align-self:center;">New fields, new optional parameters — no version bump required.</span>
+        </div>
+        <div style="display:flex;gap:16px;">
+          <span class="badge badge-warn">Breaking changes</span>
+          <span style="color:var(--muted);font-size:12px;align-self:center;">Require migration notes and dual-read period across both versions.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SECURITY ═══ -->
+  <div id="security" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">Security</div>
+      <h2>Security Policy</h2>
+      <p>Data classification, core requirements, LLM-specific controls, and vulnerability SLAs.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🏷️</span> Data Classification</div>
+      <div class="grid grid-4">
+        <div class="card" style="border-color:rgba(126,231,135,.3)">
+          <div style="font-size:18px;margin-bottom:4px;">🟢</div>
+          <div style="font-weight:700;font-size:13px;color:var(--accent2)">Public</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;">No restrictions</div>
+        </div>
+        <div class="card" style="border-color:rgba(88,166,255,.3)">
+          <div style="font-size:18px;margin-bottom:4px;">🔵</div>
+          <div style="font-weight:700;font-size:13px;color:var(--accent)">Internal</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;">Employee access</div>
+        </div>
+        <div class="card" style="border-color:rgba(227,179,65,.3)">
+          <div style="font-size:18px;margin-bottom:4px;">🟡</div>
+          <div style="font-weight:700;font-size:13px;color:var(--yellow)">Confidential</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;">Need-to-know</div>
+        </div>
+        <div class="card" style="border-color:rgba(247,120,186,.3)">
+          <div style="font-size:18px;margin-bottom:4px;">🔴</div>
+          <div style="font-weight:700;font-size:13px;color:var(--pink)">Restricted</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;">Regulated / customer-sensitive</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🔒</span> Core Requirements</div>
+      <div class="card">
+        <div class="gate-item">
+          <div class="gate-icon" style="color:var(--accent2)">✓</div>
+          <div><div class="gate-label">Encrypt in transit — TLS 1.2+</div></div>
+        </div>
+        <div class="gate-item">
+          <div class="gate-icon" style="color:var(--accent2)">✓</div>
+          <div><div class="gate-label">Encrypt at rest for all persistent data stores</div></div>
+        </div>
+        <div class="gate-item">
+          <div class="gate-icon" style="color:var(--accent2)">✓</div>
+          <div><div class="gate-label">Least-privilege IAM for runtime and CI identities</div></div>
+        </div>
+        <div class="gate-item">
+          <div class="gate-icon" style="color:var(--accent2)">✓</div>
+          <div><div class="gate-label">Centralized secrets management — no plaintext secrets in git</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🤖</span> LLM/RAG-Specific Controls</div>
+      <div class="grid grid-3">
+        <div class="card" style="border-color:rgba(247,120,186,.3)">
+          <div class="card-title">Prompt Injection</div>
+          <div style="font-size:12px;color:var(--muted);">Detection + response filtering on all LLM calls.</div>
+        </div>
+        <div class="card" style="border-color:rgba(227,179,65,.3)">
+          <div class="card-title">Source Provenance</div>
+          <div style="font-size:12px;color:var(--muted);">Allowlist + provenance tracking for all retrieval sources.</div>
+        </div>
+        <div class="card" style="border-color:rgba(88,166,255,.3)">
+          <div class="card-title">Output Moderation</div>
+          <div style="font-size:12px;color:var(--muted);">PII redaction for sensitive contexts before delivery.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">⏱️</span> Vulnerability Remediation SLAs</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Severity</th><th>SLA</th><th>Process</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-fail">Critical</span></td>
+              <td><strong>24 hours</strong></td>
+              <td>Page on-call immediately. Emergency release.</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-warn">High</span></td>
+              <td><strong>7 days</strong></td>
+              <td>Tracked in current sprint. Hotfix if needed.</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-info">Medium / Low</span></td>
+              <td>Sprint planning</td>
+              <td>Triaged and scheduled in regular sprint cycle.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ THREATS ═══ -->
+  <div id="threats" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">Security</div>
+      <h2>Threat Model</h2>
+      <p>Assets, trust boundaries, key threats, mitigations, and residual risk.</p>
+    </div>
+
+    <div class="section">
+      <div class="grid grid-2">
+        <div>
+          <div class="section-title"><span class="icon">💎</span> Protected Assets</div>
+          <div class="card">
+            <ul style="list-style:none;">
+              <li style="padding:8px 0;border-bottom:1px solid rgba(48,54,61,.4);font-size:13px;">🗨️ User prompts and conversation history</li>
+              <li style="padding:8px 0;border-bottom:1px solid rgba(48,54,61,.4);font-size:13px;">📄 Retrieved documents and embeddings</li>
+              <li style="padding:8px 0;border-bottom:1px solid rgba(48,54,61,.4);font-size:13px;">🤖 Model responses and telemetry</li>
+              <li style="padding:8px 0;font-size:13px;">🔑 API keys, tokens, and service credentials</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <div class="section-title"><span class="icon">🚧</span> Trust Boundaries</div>
+          <div class="card">
+            <ul style="list-style:none;">
+              <li style="padding:8px 0;border-bottom:1px solid rgba(48,54,61,.4);font-size:13px;display:flex;gap:8px;align-items:center;"><span style="color:var(--warn)">→</span> External clients → API gateway</li>
+              <li style="padding:8px 0;border-bottom:1px solid rgba(48,54,61,.4);font-size:13px;display:flex;gap:8px;align-items:center;"><span style="color:var(--warn)">→</span> API service → retrieval/index stores</li>
+              <li style="padding:8px 0;border-bottom:1px solid rgba(48,54,61,.4);font-size:13px;display:flex;gap:8px;align-items:center;"><span style="color:var(--warn)">→</span> API service → model provider(s)</li>
+              <li style="padding:8px 0;font-size:13px;display:flex;gap:8px;align-items:center;"><span style="color:var(--warn)">→</span> Observability stack ← operational telemetry</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">⚠️</span> Key Threats & Mitigations</div>
+
+      <div class="threat-item">
+        <div class="threat-header">
+          <span class="threat-name">Prompt Injection & Retrieval Poisoning</span>
+          <span class="badge badge-fail">High</span>
+        </div>
+        <ul class="mitigation-list">
+          <li>Input validation and policy-enforced tool access</li>
+          <li>Retrieval source validation and signed content pipeline</li>
+        </ul>
+      </div>
+
+      <div class="threat-item">
+        <div class="threat-header">
+          <span class="threat-name">Data Exfiltration (logs / model output)</span>
+          <span class="badge badge-fail">High</span>
+        </div>
+        <ul class="mitigation-list">
+          <li>Output moderation and PII redaction for sensitive contexts</li>
+          <li>Immutable audit trails — see <code>shrag.security.rtbf</code></li>
+        </ul>
+      </div>
+
+      <div class="threat-item">
+        <div class="threat-header">
+          <span class="threat-name">Credential Compromise (CI/CD or runtime)</span>
+          <span class="badge badge-warn">Medium</span>
+        </div>
+        <ul class="mitigation-list">
+          <li>Secret rotation and workload identity</li>
+          <li>Least-privilege IAM, no plaintext secrets in git</li>
+        </ul>
+      </div>
+
+      <div class="threat-item">
+        <div class="threat-header">
+          <span class="threat-name">Denial of Service (retrieval + generation)</span>
+          <span class="badge badge-warn">Medium</span>
+        </div>
+        <ul class="mitigation-list">
+          <li>Rate limiting and circuit breakers</li>
+          <li>Graceful degradation — smaller context / cheaper model fallback</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🕳️</span> Residual Risk</div>
+      <div class="card">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span class="badge badge-warn">Open</span>
+            <span style="font-size:13px;color:var(--text);">Third-party model behavior drift — no full control over provider updates.</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span class="badge badge-warn">Open</span>
+            <span style="font-size:13px;color:var(--text);">Zero-day dependencies — mitigated by dependency scanning but not eliminated.</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span class="badge badge-warn">Open</span>
+            <span style="font-size:13px;color:var(--text);">Governance gaps in newly onboarded data sources — connector review required.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ COMPLIANCE ═══ -->
+  <div id="compliance" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">Security</div>
+      <h2>Compliance Control Map</h2>
+      <p>SOC 2, ISO 27001, GDPR control status with evidence pointers.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🏛️</span> Framework Alignment</div>
+      <div class="grid grid-3">
+        <div class="card" style="border-color:rgba(88,166,255,.3)">
+          <div class="card-title">SOC 2</div>
+          <div style="font-size:13px;color:var(--text);">CC6, CC7, CC8, CC9</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Change management, availability, confidentiality, security</div>
+        </div>
+        <div class="card" style="border-color:rgba(126,231,135,.3)">
+          <div class="card-title">ISO 27001</div>
+          <div style="font-size:13px;color:var(--text);">A.5, A.8, A.12, A.16</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Policies, asset mgmt, operations security, incident mgmt</div>
+        </div>
+        <div class="card" style="border-color:rgba(227,179,65,.3)">
+          <div class="card-title">GDPR</div>
+          <div style="font-size:13px;color:var(--text);">Art. 5, 25, 32</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Data principles, privacy by design, security of processing</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📊</span> Control Status</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Domain</th><th>Control Objective</th><th>Status</th><th>Evidence</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Access Control</strong></td>
+              <td>Least privilege and MFA enforcement</td>
+              <td><span class="badge badge-partial">Partial</span></td>
+              <td><code>shrag/security/authz.py</code>, IdP/IAM external</td>
+            </tr>
+            <tr>
+              <td><strong>Data Protection</strong></td>
+              <td>Encryption in transit/at rest</td>
+              <td><span class="badge badge-partial">Partial</span></td>
+              <td>TLS/KMS external, <code>security-policy.md</code></td>
+            </tr>
+            <tr>
+              <td><strong>Logging/Audit</strong></td>
+              <td>Immutable audit trails for admin actions</td>
+              <td><span class="badge badge-partial">Partial</span></td>
+              <td><code>shrag/security/rtbf.py</code>, SIEM external</td>
+            </tr>
+            <tr>
+              <td><strong>Change Mgmt</strong></td>
+              <td>Reviewed and traceable deployments</td>
+              <td><span class="badge badge-pass">Implemented</span></td>
+              <td><code>ops/verification/release_gate.py</code></td>
+            </tr>
+            <tr>
+              <td><strong>Incident Response</strong></td>
+              <td>Defined response and escalation paths</td>
+              <td><span class="badge badge-pass">Implemented</span></td>
+              <td><code>ops/runbooks/connector-failure.md</code></td>
+            </tr>
+            <tr>
+              <td><strong>Vendor Risk</strong></td>
+              <td>Third-party model/provider assessment</td>
+              <td><span class="badge badge-partial">Partial</span></td>
+              <td>Provider risk register maintained outside repo</td>
+            </tr>
+            <tr>
+              <td><strong>Fine-Tuning Governance</strong></td>
+              <td>Dataset/training/promotion evidence with rollback</td>
+              <td><span class="badge badge-pass">Implemented</span></td>
+              <td><code>ops/verification/run_finetune_readiness.py</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📁</span> Required External Evidence</div>
+      <div class="card">
+        <ul style="list-style:none;">
+          <li style="padding:8px 0;border-bottom:1px solid rgba(48,54,61,.4);font-size:13px;display:flex;gap:8px;"><span style="color:var(--muted)">•</span>IAM policy exports and access-review attestations</li>
+          <li style="padding:8px 0;border-bottom:1px solid rgba(48,54,61,.4);font-size:13px;display:flex;gap:8px;"><span style="color:var(--muted)">•</span>KMS key policy and storage encryption attestations</li>
+          <li style="padding:8px 0;border-bottom:1px solid rgba(48,54,61,.4);font-size:13px;display:flex;gap:8px;"><span style="color:var(--muted)">•</span>SIEM immutability/retention evidence</li>
+          <li style="padding:8px 0;font-size:13px;display:flex;gap:8px;"><span style="color:var(--muted)">•</span>Change-ticket and CAB approvals for production promotion</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RUNBOOKS ═══ -->
+  <div id="runbooks" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">Operations</div>
+      <h2>Runbooks</h2>
+      <p>Severity-based incident handling, DR procedures, and model rollback.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🔴</span> Service Degradation</div>
+      <div class="card">
+        <div class="card-title">Triggers</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+          <span class="badge badge-fail">Elevated p95/p99 latency</span>
+          <span class="badge badge-fail">Increased 5xx rate</span>
+          <span class="badge badge-fail">SLO burn alert firing</span>
+        </div>
+        <div class="card-title">Triage Steps</div>
+        <ul class="steps" style="margin-bottom:16px;">
+          <li><div class="step-num">1</div><div class="step-text">Validate alert scope — global vs single dependency failure.</div></li>
+          <li><div class="step-num">2</div><div class="step-text">Check recent deploys and config changes for correlation.</div></li>
+          <li><div class="step-num">3</div><div class="step-text">Inspect retrieval store, model provider, and queue saturation.</div></li>
+        </ul>
+        <div class="card-title">Mitigation</div>
+        <ul class="steps" style="margin-bottom:16px;">
+          <li><div class="step-num">1</div><div class="step-text">Enable degraded mode: smaller context / cheaper model fallback.</div></li>
+          <li><div class="step-num">2</div><div class="step-text">Apply traffic shaping and rate limiting.</div></li>
+          <li><div class="step-num">3</div><div class="step-text">Roll back latest risky deploy if correlated.</div></li>
+        </ul>
+        <div style="background:rgba(126,231,135,.08);border:1px solid rgba(126,231,135,.3);border-radius:6px;padding:10px;font-size:12px;">
+          <strong style="color:var(--accent2)">Exit Criteria:</strong> Error rate and latency within SLO thresholds. No active fast-burn alerts for 30 minutes.
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🔄</span> Disaster Recovery</div>
+      <div class="card">
+        <div class="grid grid-2" style="margin-bottom:16px;">
+          <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:6px;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">RTO</div>
+            <div style="font-size:28px;font-weight:700;color:var(--accent)">60 min</div>
+            <div style="font-size:11px;color:var(--muted);">Recovery Time Objective</div>
+            <span class="badge badge-pass" style="margin-top:8px;">Verified ✓</span>
+          </div>
+          <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:6px;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">RPO</div>
+            <div style="font-size:28px;font-weight:700;color:var(--accent)">15 min</div>
+            <div style="font-size:11px;color:var(--muted);">Recovery Point Objective</div>
+            <span class="badge badge-pass" style="margin-top:8px;">Verified ✓</span>
+          </div>
+        </div>
+        <div class="card-title">Recovery Steps</div>
+        <ul class="steps">
+          <li><div class="step-num">1</div><div class="step-text">Declare DR event and freeze non-essential changes.</div></li>
+          <li><div class="step-num">2</div><div class="step-text">Restore control plane and critical data stores from latest verified backup.</div></li>
+          <li><div class="step-num">3</div><div class="step-text">Re-deploy API + retrieval components using known-good release.</div></li>
+          <li><div class="step-num">4</div><div class="step-text">Run post-restore health/eval smoke checks.</div></li>
+          <li><div class="step-num">5</div><div class="step-text">Re-enable traffic gradually and monitor SLO burn.</div></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">⏪</span> Model Rollback</div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px;">Preconditions</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
+          <div style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent2)">✓</span>Active incident or change ticket is open</div>
+          <div style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent2)">✓</span>Last known-good model id identified from <code>.state/model-registry.json</code></div>
+          <div style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent2)">✓</span>Release owner and approver assigned</div>
+        </div>
+        <div class="card-title">Procedure</div>
+        <ul class="steps" style="margin-bottom:16px;">
+          <li><div class="step-num">1</div><div class="step-text">Freeze further promotions.</div></li>
+          <li><div class="step-num">2</div><div class="step-text">Route traffic to last known-good model id.</div></li>
+          <li><div class="step-num">3</div><div class="step-text">Verify health and quality gates: <code>make release-gate-strict</code></div></li>
+          <li><div class="step-num">4</div><div class="step-text">Confirm operational SLO recovery and close incident.</div></li>
+        </ul>
+        <div class="card-title">Evidence to Capture</div>
+        <div style="font-size:12px;color:var(--muted);line-height:2;">
+          Incident/change ticket id · Model ids (failed candidate + restored) · Timestamp of cutover · Gate output payloads from <code>.state/*</code> and <code>docs/evidence/latest/*</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📚</span> All Runbooks Index</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Runbook</th><th>Path</th></tr></thead>
+          <tbody>
+            <tr><td>Service Degradation</td><td><code>docs/runbooks/service-degradation.md</code></td></tr>
+            <tr><td>Security Incident</td><td><code>docs/runbooks/security-incident.md</code></td></tr>
+            <tr><td>Disaster Recovery</td><td><code>docs/runbooks/disaster-recovery.md</code></td></tr>
+            <tr><td>Model Rollback</td><td><code>docs/runbooks/model-rollback.md</code></td></tr>
+            <tr><td>On-call Handoff</td><td><code>docs/runbooks/oncall-handoff.md</code></td></tr>
+            <tr><td>Incident Response</td><td><code>ops/runbooks/incident-response.md</code></td></tr>
+            <tr><td>Index Cutover</td><td><code>ops/runbooks/index-cutover.md</code></td></tr>
+            <tr><td>Connector Failure</td><td><code>ops/runbooks/connector-failure.md</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ EVIDENCE ═══ -->
+  <div id="evidence" class="page">
+    <div class="page-header">
+      <div class="breadcrumb">Operations</div>
+      <h2>Evidence Vault</h2>
+      <p>Versioned release evidence across all gate reports. Latest run: <code>20260510T174625Z</code>.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🏆</span> Latest Evidence Summary</div>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title">Core Reports (required)</div>
+          <div class="gate-item">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div>
+              <div class="gate-label"><code>scale-500k-report.json</code></div>
+              <div class="gate-desc">ingest_ok · query_ok · chaos_ok — all pass</div>
+            </div>
+          </div>
+          <div class="gate-item">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div>
+              <div class="gate-label"><code>benchmark-500k-report.json</code></div>
+              <div class="gate-desc">780ms retrieval p95 · 52K/hr · recall 0.81</div>
+            </div>
+          </div>
+          <div class="gate-item">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div>
+              <div class="gate-label"><code>dr-failover-report.json</code></div>
+              <div class="gate-desc">RTO passed · RPO passed · rollback verified</div>
+            </div>
+          </div>
+          <div class="gate-item">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div>
+              <div class="gate-label"><code>connector-evidence-report.json</code></div>
+              <div class="gate-desc">Standard + strict modes both pass</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Optional Reports (fine-tune lane)</div>
+          <div class="gate-item">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div>
+              <div class="gate-label"><code>finetune-readiness-report.json</code></div>
+              <div class="gate-desc">validation_passed · H100 required · eng-assistant-v1</div>
+            </div>
+          </div>
+          <div class="gate-item">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div>
+              <div class="gate-label"><code>finetune-dataset-report.json</code></div>
+              <div class="gate-desc">engineering-corpus · 2026.05.10 · pii_scrubbed</div>
+            </div>
+          </div>
+          <div class="gate-item">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div>
+              <div class="gate-label"><code>finetune-training-report.json</code></div>
+              <div class="gate-desc">train-20260510-001 · H100 · eval_passed</div>
+            </div>
+          </div>
+          <div class="gate-item">
+            <div class="gate-icon" style="color:var(--accent2)">✓</div>
+            <div>
+              <div class="gate-label"><code>finetune-promotion-report.json</code></div>
+              <div class="gate-desc">approval + approver + ticket + rollback plan</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📅</span> Evidence Timeline</div>
+      <div class="card">
+        <div class="evidence-item">
+          <div class="ev-time">20260510T174625Z</div>
+          <div class="ev-content">
+            <div class="ev-title">Full Release Gate — All Gates Pass</div>
+            <div class="ev-badges">
+              <span class="badge badge-pass">scale</span>
+              <span class="badge badge-pass">benchmark</span>
+              <span class="badge badge-pass">DR</span>
+              <span class="badge badge-pass">connector</span>
+              <span class="badge badge-pass">finetune-readiness</span>
+              <span class="badge badge-pass">finetune-strict</span>
+            </div>
+          </div>
+        </div>
+        <div class="evidence-item">
+          <div class="ev-time">20260510T174233Z</div>
+          <div class="ev-content">
+            <div class="ev-title">Release Gate + Fine-Tune Readiness</div>
+            <div class="ev-badges">
+              <span class="badge badge-pass">scale</span>
+              <span class="badge badge-pass">benchmark</span>
+              <span class="badge badge-pass">DR</span>
+              <span class="badge badge-pass">connector</span>
+              <span class="badge badge-pass">finetune-readiness</span>
+            </div>
+          </div>
+        </div>
+        <div class="evidence-item">
+          <div class="ev-time">20260510T000524Z</div>
+          <div class="ev-content">
+            <div class="ev-title">Core Release Gate</div>
+            <div class="ev-badges">
+              <span class="badge badge-pass">scale</span>
+              <span class="badge badge-pass">benchmark</span>
+              <span class="badge badge-pass">DR</span>
+              <span class="badge badge-pass">connector</span>
+            </div>
+          </div>
+        </div>
+        <div class="evidence-item">
+          <div class="ev-time">20260510T000239Z</div>
+          <div class="ev-content">
+            <div class="ev-title">Core Release Gate</div>
+            <div class="ev-badges">
+              <span class="badge badge-pass">scale</span>
+              <span class="badge badge-pass">benchmark</span>
+              <span class="badge badge-pass">DR</span>
+              <span class="badge badge-pass">connector</span>
+            </div>
+          </div>
+        </div>
+        <div class="evidence-item">
+          <div class="ev-time">20260510T000047Z</div>
+          <div class="ev-content">
+            <div class="ev-title">Scale + DR Evidence</div>
+            <div class="ev-badges">
+              <span class="badge badge-pass">scale</span>
+              <span class="badge badge-pass">DR</span>
+              <span class="badge badge-pass">connector</span>
+            </div>
+          </div>
+        </div>
+        <div class="evidence-item" style="border:none">
+          <div class="ev-time">20260509T235929Z</div>
+          <div class="ev-content">
+            <div class="ev-title">Initial Gate Run</div>
+            <div class="ev-badges">
+              <span class="badge badge-pass">scale</span>
+              <span class="badge badge-pass">DR</span>
+              <span class="badge badge-pass">connector</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📂</span> Evidence Directory Structure</div>
+      <pre>docs/evidence/
+├── latest/              ← symlink to most recent run
+│   ├── manifest.json
+│   ├── scale-500k-report.json
+│   ├── benchmark-500k-report.json
+│   ├── dr-failover-report.json
+│   ├── connector-evidence-report.json
+│   ├── connector-evidence-report-strict.json
+│   ├── finetune-readiness-report.json
+│   ├── finetune-dataset-report.json
+│   ├── finetune-training-report.json
+│   └── finetune-promotion-report.json
+└── 20260510T174625Z/    ← versioned snapshot</pre>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+function show(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  const page = document.getElementById(pageId);
+  if (page) page.classList.add('active');
+
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') === `show('${pageId}')`) {
+      n.classList.add('active');
+    }
+  });
+}
+</script>
+</body>
+</html>

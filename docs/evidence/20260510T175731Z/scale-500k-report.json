@@ -1,0 +1,9 @@
+{
+  "all_gates_passed": true,
+  "chaos_ok": true,
+  "chaos_reason": "pass",
+  "ingest_ok": true,
+  "ingest_reason": "pass",
+  "query_ok": true,
+  "query_reason": "pass"
+}

@@ -1,0 +1,17 @@
+{
+  "generated_at_utc": "20260510T174625Z",
+  "optional_reports": [
+    "connector-evidence-report-strict.json",
+    "finetune-readiness-report.json",
+    "finetune-dataset-report.json",
+    "finetune-training-report.json",
+    "finetune-promotion-report.json"
+  ],
+  "reports": [
+    "scale-500k-report.json",
+    "benchmark-500k-report.json",
+    "dr-failover-report.json",
+    "connector-evidence-report.json"
+  ],
+  "source_state_dir": ".state"
+}

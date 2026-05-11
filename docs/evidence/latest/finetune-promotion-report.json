@@ -1,0 +1,8 @@
+{
+  "approved": true,
+  "approver": "ml-governance-board",
+  "candidate_model_id": "eng-assistant-v1",
+  "change_ticket": "CHG-2026-0510",
+  "provenance_mode": "production",
+  "rollback_plan_ref": "docs/runbooks/model-rollback.md#v1"
+}

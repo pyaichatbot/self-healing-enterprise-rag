@@ -1,0 +1,14 @@
+{
+  "dataset_id": "engineering-corpus",
+  "dataset_version": "2026.05.10",
+  "license_policy_passed": true,
+  "pii_scrubbed": true,
+  "record_count": 100000,
+  "source_systems": [
+    "confluence",
+    "jira",
+    "sharepoint",
+    "github",
+    "gitlab"
+  ]
+}

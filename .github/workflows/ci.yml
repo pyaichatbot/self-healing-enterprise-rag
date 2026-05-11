@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - "self-healing-rag/**"
+  pull_request:
+    paths:
+      - "self-healing-rag/**"
+
+jobs:
+  quality-and-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: self-healing-rag
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install base dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Install quality/security tools (best effort)
+        run: |
+          pip install ruff mypy bandit pip-audit semgrep || true
+
+      - name: Ruff
+        run: |
+          if command -v ruff >/dev/null 2>&1; then
+            ruff check src tests
+          else
+            echo "ruff not installed; skipping"
+          fi
+
+      - name: Mypy
+        run: |
+          if command -v mypy >/dev/null 2>&1; then
+            mypy src
+          else
+            echo "mypy not installed; skipping"
+          fi
+
+      - name: Pytest
+        run: pytest -q tests
+
+      - name: Generate Scale/DR Evidence Reports
+        run: |
+          make scale-report
+          make benchmark-500k
+          make dr-drill
+          make connector-evidence
+
+      - name: Generate Strict Connector Evidence Report (Optional)
+        if: ${{ env.SHRAG_RELEASE_STRICT == '1' }}
+        run: |
+          if [ "${SHRAG_RELEASE_STRICT_MOCK:-0}" = "1" ]; then
+            make connector-evidence-strict-mock
+          else
+            make connector-evidence-strict
+          fi
+
+      - name: Release Evidence Gate
+        run: |
+          if [ "${SHRAG_RELEASE_STRICT:-0}" = "1" ]; then
+            make release-gate-strict
+          else
+            make release-gate
+          fi
+
+      - name: Bandit
+        run: |
+          if command -v bandit >/dev/null 2>&1; then
+            bandit -q -r src
+          else
+            echo "bandit not installed"
+            exit 1
+          fi
+
+      - name: pip-audit
+        run: |
+          if command -v pip-audit >/dev/null 2>&1; then
+            pip-audit
+          else
+            echo "pip-audit not installed"
+            exit 1
+          fi
+
+      - name: Semgrep
+        run: |
+          if command -v semgrep >/dev/null 2>&1; then
+            semgrep --config auto src
+          else
+            echo "semgrep not installed"
+            exit 1
+          fi

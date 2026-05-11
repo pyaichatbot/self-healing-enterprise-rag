@@ -1,0 +1,14 @@
+{
+  "failed_count": 0,
+  "passed": true,
+  "passed_count": 1,
+  "results": [
+    {
+      "reason": "contract_verified",
+      "source": "github",
+      "status": "pass"
+    }
+  ],
+  "skipped_count": 0,
+  "strict_required": true
+}

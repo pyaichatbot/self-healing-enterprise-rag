@@ -1,0 +1,2 @@
+error_rate_threshold: 0.25
+half_open_after_seconds: 30

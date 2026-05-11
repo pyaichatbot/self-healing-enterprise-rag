@@ -1,0 +1,21 @@
+{
+  "title": "Self-Healing RAG Service Overview",
+  "uid": "self-healing-rag-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Placeholder: Request Rate",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [{ "expr": "up", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Placeholder: Error Rate",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [{ "expr": "up", "refId": "A" }]
+    }
+  ]
+}

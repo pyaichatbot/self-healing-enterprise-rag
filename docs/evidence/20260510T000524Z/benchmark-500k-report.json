@@ -1,0 +1,9 @@
+{
+  "corpus_docs": 500000,
+  "ingest_docs_per_hour": 52000,
+  "passed": true,
+  "query_p95_ms": 2200.0,
+  "reason": "pass",
+  "retrieval_p95_ms": 780.0,
+  "retrieval_recall_at_k": 0.81
+}

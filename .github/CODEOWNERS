@@ -1,0 +1,5 @@
+# Security-critical policy and threat-model artifacts require explicit review.
+/docs/security-policy.md @pyaichatbot/security
+/docs/threat-model.md @pyaichatbot/security
+/ops/supply-chain/* @pyaichatbot/security
+/ops/runbooks/disaster-recovery.md @pyaichatbot/platform

@@ -1,0 +1,13 @@
+{
+  "details": {
+    "candidate_model_id": "eng-assistant-v1",
+    "dataset_id": "engineering-corpus",
+    "dataset_version": "2026.05.10",
+    "require_h100": true,
+    "run_id": "train-20260510-001",
+    "state_dir": ".state",
+    "validation_passed": true
+  },
+  "failures": [],
+  "passed": true
+}

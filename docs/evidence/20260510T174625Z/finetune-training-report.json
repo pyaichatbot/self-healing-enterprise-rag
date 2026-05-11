@@ -1,0 +1,9 @@
+{
+  "base_model": "llama3.1-70b-instruct",
+  "eval_passed": true,
+  "gpu_count": 4,
+  "gpu_type": "H100",
+  "method": "qlora",
+  "run_id": "train-20260510-001",
+  "train_loss": 1.42
+}

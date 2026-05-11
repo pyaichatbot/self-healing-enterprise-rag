@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenv
+.venv/
+venv/
+
+# Test / coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local runtime artifacts
+.state/
+*.db
+*.sqlite
+*.sqlite3
+
+# Bench outputs
+.state/*.jsonl
+.state/erb-results/
+.state/erb-mini-results/
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,18 @@
+apiVersion: observability.selfhealingrag/v1alpha1
+kind: ServiceLevelObjectives
+metadata:
+  name: self-healing-rag
+spec:
+  objectives:
+    - name: api-availability
+      target: "99.9"
+      window: 30d
+      indicator: http_availability
+    - name: retrieval-success
+      target: "99.5"
+      window: 30d
+      indicator: retrieval_success_rate
+    - name: health-latency-p95
+      target: "0.2s"
+      window: 30d
+      indicator: health_latency_p95

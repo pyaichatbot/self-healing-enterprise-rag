@@ -1,0 +1,49 @@
+{
+  "failed_count": 0,
+  "passed": true,
+  "passed_count": 0,
+  "results": [
+    {
+      "reason": "not_enabled",
+      "source": "confluence",
+      "status": "skip"
+    },
+    {
+      "reason": "not_enabled",
+      "source": "jira",
+      "status": "skip"
+    },
+    {
+      "reason": "not_enabled",
+      "source": "sharepoint",
+      "status": "skip"
+    },
+    {
+      "reason": "not_enabled",
+      "source": "google_drive",
+      "status": "skip"
+    },
+    {
+      "reason": "not_enabled",
+      "source": "notion",
+      "status": "skip"
+    },
+    {
+      "reason": "not_enabled",
+      "source": "github",
+      "status": "skip"
+    },
+    {
+      "reason": "not_enabled",
+      "source": "gitlab",
+      "status": "skip"
+    },
+    {
+      "reason": "not_enabled",
+      "source": "webdav_s3",
+      "status": "skip"
+    }
+  ],
+  "skipped_count": 8,
+  "strict_required": false
+}

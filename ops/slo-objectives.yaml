@@ -1,0 +1,12 @@
+# Deprecated path retained for compatibility.
+# Canonical location: ops/slo/objectives.yaml
+apiVersion: observability.selfhealingrag/v1alpha1
+kind: ServiceLevelObjectives
+metadata:
+  name: self-healing-rag
+spec:
+  objectives:
+    - name: api-availability
+      target: "99.9"
+      window: 30d
+      indicator: http_availability

@@ -1,0 +1,9 @@
+{
+  "generated_at_utc": "20260510T000047Z",
+  "reports": [
+    "scale-500k-report.json",
+    "dr-failover-report.json",
+    "connector-evidence-report.json"
+  ],
+  "source_state_dir": ".state"
+}

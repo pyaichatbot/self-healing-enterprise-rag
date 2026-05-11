@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "readyz_healthy_after_cutover": true,
+  "reason": "pass",
+  "rollback_verified": true,
+  "rpo_passed": true,
+  "rto_passed": true
+}

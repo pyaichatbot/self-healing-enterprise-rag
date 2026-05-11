@@ -1,0 +1,3 @@
+max_attempts: 2
+backoff_seconds: 0.2
+jitter: true
