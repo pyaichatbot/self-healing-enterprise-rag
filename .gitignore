@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
 
 # Virtualenv
 .venv/
@@ -30,3 +31,12 @@ htmlcov/
 .DS_Store
 .idea/
 .vscode/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs / temp
+*.log
+tmp/
