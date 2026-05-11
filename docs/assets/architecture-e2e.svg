@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760">
+  <defs>
+    <style>
+      .bg { fill: #0d1117; }
+      .panel { fill: #161b22; stroke: #30363d; stroke-width: 1.5; rx: 12; }
+      .title { fill: #e6edf3; font: 700 26px -apple-system,Segoe UI,Roboto,sans-serif; }
+      .subtitle { fill: #8b949e; font: 500 14px -apple-system,Segoe UI,Roboto,sans-serif; }
+      .laneTitle { fill: #8b949e; font: 700 13px -apple-system,Segoe UI,Roboto,sans-serif; letter-spacing: .06em; }
+      .nodeText { fill: #e6edf3; font: 700 13px -apple-system,Segoe UI,Roboto,sans-serif; }
+      .nodeSub { fill: #8b949e; font: 500 11px -apple-system,Segoe UI,Roboto,sans-serif; }
+      .pillBlue { fill: rgba(88,166,255,.16); stroke: #58a6ff; stroke-width: 1.2; }
+      .pillGreen { fill: rgba(126,231,135,.16); stroke: #7ee787; stroke-width: 1.2; }
+      .pillYellow { fill: rgba(227,179,65,.16); stroke: #e3b341; stroke-width: 1.2; }
+      .pillPurple { fill: rgba(188,140,255,.16); stroke: #bc8cff; stroke-width: 1.2; }
+      .pillPink { fill: rgba(247,120,186,.16); stroke: #f778ba; stroke-width: 1.2; }
+      .arrow { stroke: #30363d; stroke-width: 2; fill: none; }
+      .feedback { stroke: #7ee787; stroke-width: 2; stroke-dasharray: 6 6; fill: none; }
+      .foot { fill: #8b949e; font: 500 12px -apple-system,Segoe UI,Roboto,sans-serif; }
+    </style>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#30363d"/>
+    </marker>
+    <marker id="arrGreen" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#7ee787"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1400" height="760"/>
+  <text class="title" x="40" y="52">Self-Healing Enterprise RAG - End-to-End Architecture</text>
+  <text class="subtitle" x="40" y="78">Ingestion, retrieval, generation, security, healing, evaluation, and fine-tuning governance</text>
+
+  <rect class="panel" x="30" y="108" width="1340" height="176"/>
+  <text class="laneTitle" x="48" y="134">INGEST + INDEX PLANE</text>
+
+  <rect class="pillYellow" x="52" y="156" width="180" height="88" rx="10"/>
+  <text class="nodeText" x="72" y="186">Connectors</text>
+  <text class="nodeSub" x="72" y="206">Confluence, Jira, SharePoint, Git</text>
+  <text class="nodeSub" x="72" y="222">crawler + delta sync + ACL metadata</text>
+
+  <rect class="pillBlue" x="274" y="156" width="188" height="88" rx="10"/>
+  <text class="nodeText" x="294" y="186">Normalize + Chunk</text>
+  <text class="nodeSub" x="294" y="206">schema mapping, hierarchy-preserving</text>
+  <text class="nodeSub" x="294" y="222">template-aware chunking + overlap</text>
+
+  <rect class="pillGreen" x="504" y="156" width="176" height="88" rx="10"/>
+  <text class="nodeText" x="524" y="186">Embed + Enrich</text>
+  <text class="nodeSub" x="524" y="206">embeddings + lineage + source tags</text>
+  <text class="nodeSub" x="524" y="222">tenant + compliance attributes</text>
+
+  <rect class="pillPurple" x="722" y="156" width="196" height="88" rx="10"/>
+  <text class="nodeText" x="742" y="186">Blue/Green Index</text>
+  <text class="nodeSub" x="742" y="206">candidate build + parity checks</text>
+  <text class="nodeSub" x="742" y="222">safe cutover + rollback path</text>
+
+  <rect class="pillPink" x="960" y="156" width="212" height="88" rx="10"/>
+  <text class="nodeText" x="980" y="186">Vector + Sparse Stores</text>
+  <text class="nodeSub" x="980" y="206">hybrid retrieval index</text>
+  <text class="nodeSub" x="980" y="222">tenant-isolated partitions</text>
+
+  <path class="arrow" d="M232 200 L274 200" marker-end="url(#arr)"/>
+  <path class="arrow" d="M462 200 L504 200" marker-end="url(#arr)"/>
+  <path class="arrow" d="M680 200 L722 200" marker-end="url(#arr)"/>
+  <path class="arrow" d="M918 200 L960 200" marker-end="url(#arr)"/>
+
+  <rect class="panel" x="30" y="308" width="1340" height="228"/>
+  <text class="laneTitle" x="48" y="334">SERVE + HEAL + EVAL PLANE</text>
+
+  <rect class="pillBlue" x="52" y="360" width="170" height="92" rx="10"/>
+  <text class="nodeText" x="72" y="390">API Gateway</text>
+  <text class="nodeSub" x="72" y="410">versioned contract, authz, rate limit</text>
+  <text class="nodeSub" x="72" y="426">tenant context + trace envelope</text>
+
+  <rect class="pillGreen" x="256" y="360" width="174" height="92" rx="10"/>
+  <text class="nodeText" x="276" y="390">Hybrid Retrieve</text>
+  <text class="nodeSub" x="276" y="410">dense + sparse (+graph optional)</text>
+  <text class="nodeSub" x="276" y="426">metadata/ACL filtering</text>
+
+  <rect class="pillYellow" x="464" y="360" width="170" height="92" rx="10"/>
+  <text class="nodeText" x="484" y="390">Grade + Rerank</text>
+  <text class="nodeSub" x="484" y="410">signal scoring + evidence quality</text>
+  <text class="nodeSub" x="484" y="426">confidence shaping</text>
+
+  <rect class="pillPurple" x="668" y="360" width="170" height="92" rx="10"/>
+  <text class="nodeText" x="688" y="390">Generate</text>
+  <text class="nodeSub" x="688" y="410">answer with citations</text>
+  <text class="nodeSub" x="688" y="426">provider-abstraction backends</text>
+
+  <rect class="pillPink" x="872" y="360" width="188" height="92" rx="10"/>
+  <text class="nodeText" x="892" y="390">Security + Guardrails</text>
+  <text class="nodeSub" x="892" y="410">PII scrub, prompt injection defense</text>
+  <text class="nodeSub" x="892" y="426">policy checks + RTBF hooks</text>
+
+  <rect class="pillBlue" x="1094" y="360" width="244" height="92" rx="10"/>
+  <text class="nodeText" x="1114" y="390">Observe + Evaluate + Evidence</text>
+  <text class="nodeSub" x="1114" y="410">metrics, traces, regression gates</text>
+  <text class="nodeSub" x="1114" y="426">release evidence + runbook triggers</text>
+
+  <path class="arrow" d="M222 404 L256 404" marker-end="url(#arr)"/>
+  <path class="arrow" d="M430 404 L464 404" marker-end="url(#arr)"/>
+  <path class="arrow" d="M634 404 L668 404" marker-end="url(#arr)"/>
+  <path class="arrow" d="M838 404 L872 404" marker-end="url(#arr)"/>
+  <path class="arrow" d="M1060 404 L1094 404" marker-end="url(#arr)"/>
+
+  <rect class="pillGreen" x="548" y="474" width="282" height="48" rx="10"/>
+  <text class="nodeText" x="568" y="503">Self-Healing Orchestrator (reflect -> retry/retrieve/regenerate)</text>
+  <path class="feedback" d="M966 452 Q966 515 830 515" marker-end="url(#arrGreen)"/>
+  <path class="feedback" d="M548 500 Q432 500 343 452" marker-end="url(#arrGreen)"/>
+
+  <rect class="panel" x="30" y="560" width="1340" height="164"/>
+  <text class="laneTitle" x="48" y="586">H100 FINE-TUNING GOVERNANCE PLANE</text>
+
+  <rect class="pillPurple" x="52" y="610" width="266" height="86" rx="10"/>
+  <text class="nodeText" x="72" y="640">Dataset Preparation</text>
+  <text class="nodeSub" x="72" y="660">curate SFT data from traces, feedback, task outcomes</text>
+  <text class="nodeSub" x="72" y="676">PII/compliance validation + provenance</text>
+
+  <rect class="pillPurple" x="356" y="610" width="236" height="86" rx="10"/>
+  <text class="nodeText" x="376" y="640">LoRA/QLoRA Training (H100)</text>
+  <text class="nodeSub" x="376" y="660">behavior adaptation, not dynamic knowledge storage</text>
+  <text class="nodeSub" x="376" y="676">versioned training artifacts</text>
+
+  <rect class="pillPurple" x="628" y="610" width="226" height="86" rx="10"/>
+  <text class="nodeText" x="648" y="640">Evaluation + Promotion Gate</text>
+  <text class="nodeSub" x="648" y="660">quality/safety/cost checks + approvals</text>
+  <text class="nodeSub" x="648" y="676">rollback-ready release</text>
+
+  <rect class="pillBlue" x="888" y="610" width="450" height="86" rx="10"/>
+  <text class="nodeText" x="908" y="640">Serve via SHRAG API + Agents with RAG Grounding Default</text>
+  <text class="nodeSub" x="908" y="660">weights for behavior, retrieval for fresh enterprise knowledge</text>
+  <text class="nodeSub" x="908" y="676">continuous eval feedback returns to dataset pipeline</text>
+
+  <path class="arrow" d="M318 652 L356 652" marker-end="url(#arr)"/>
+  <path class="arrow" d="M592 652 L628 652" marker-end="url(#arr)"/>
+  <path class="arrow" d="M854 652 L888 652" marker-end="url(#arr)"/>
+
+  <text class="foot" x="40" y="746">Baseline SLA path remains hybrid retrieval first; fine-tuned OSS LLM is promoted only through strict gated evidence.</text>
+</svg>
